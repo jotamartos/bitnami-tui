@@ -5,6 +5,6 @@ Basic skeleton for a ascii ui that can help users do basic operations to config 
 ## TL;DR;
 
 ```
-docker build -t sample .
-docker run -it sample
+docker build -t bitnami-tui .
+docker run --rm -it bitnami-tui
 ```
