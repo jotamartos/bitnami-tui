@@ -2,8 +2,8 @@
 FROM golang as builder
 WORKDIR /app
 COPY . /app
-ENV GOPATH=/app:/go
-RUN go get github.com/mattn/go-runewidth github.com/gdamore/tcell && \
+RUN go get github.com/tools/godep && \
+    godep restore && \
     go build
 
 # Create sample image
