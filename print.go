@@ -8,10 +8,9 @@ import (
 	"os"
 )
 
-var row = 0
-var indent = 2
 var styleBitnamiText = tcell.StyleDefault.Foreground(tcell.ColorWhite).Background(tcell.Color17).Bold(true)
 var styleBitnamiTextHighlight = tcell.StyleDefault.Background(tcell.ColorWhite).Foreground(tcell.Color17).Bold(true)
+var styleBitnamiMenu = tcell.StyleDefault.Background(tcell.ColorSilver).Foreground(tcell.Color17).Bold(true)
 
 func NewPrinting(s tcell.Screen) *Printing {
 	encoding.Register()
@@ -29,6 +28,8 @@ func NewPrinting(s tcell.Screen) *Printing {
 		S:          s,
 		Hightlight: styleBitnamiTextHighlight,
 		Default:    styleBitnamiText,
+		Menu:       styleBitnamiMenu,
+		Indent:     2,
 	}
 }
 
@@ -38,6 +39,7 @@ type Printing struct {
 	Indent     int
 	Hightlight tcell.Style
 	Default    tcell.Style
+	Menu       tcell.Style
 }
 
 func (p *Printing) Clear() {
@@ -64,6 +66,12 @@ func (p *Printing) Putln(str string, highlight bool) {
 		puts(p.S, p.Default, p.Indent, p.Cursor, str)
 	}
 	p.Cursor++
+}
+
+func (p *Printing) BottomBar(str string) {
+	_, y := p.S.Size()
+
+	puts(p.S, p.Menu, 0, y-1, "  "+str)
 }
 
 func puts(s tcell.Screen, style tcell.Style, x, y int, str string) {

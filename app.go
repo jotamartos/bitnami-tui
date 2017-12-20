@@ -29,9 +29,14 @@ func main() {
 			switch ev := ev.(type) {
 			case *tcell.EventKey:
 				switch ev.Key() {
-				case tcell.KeyEscape, tcell.KeyEnter:
+				case tcell.KeyEscape:
 					close(quit)
 					return
+				case tcell.KeyEnter:
+					menu.SelectToggle()
+					menu.Print(p)
+					p.Show()
+
 				case tcell.KeyCtrlL:
 					s.Sync()
 				case tcell.KeyUp:
