@@ -25,7 +25,7 @@ func NewPrinting(s tcell.Screen) *Printing {
 	s.Clear()
 
 	return &Printing{
-		S:          s,
+		s:          s,
 		Hightlight: styleBitnamiTextHighlight,
 		Default:    styleBitnamiText,
 		Menu:       styleBitnamiMenu,
@@ -34,7 +34,7 @@ func NewPrinting(s tcell.Screen) *Printing {
 }
 
 type Printing struct {
-	S          tcell.Screen
+	s          tcell.Screen
 	Cursor     int
 	Indent     int
 	Hightlight tcell.Style
@@ -43,35 +43,43 @@ type Printing struct {
 }
 
 func (p *Printing) Clear() {
-	p.S.Clear()
+	p.s.Clear()
 	p.Top()
 }
 
+func (p *Printing) Screen() tcell.Screen {
+	return p.s
+}
+
 func (p *Printing) Show() {
-	p.S.Show()
+	p.s.Show()
+}
+
+func (p *Printing) Sync() {
+	p.s.Sync()
 }
 
 func (p *Printing) Top() {
 	p.Cursor = 0
 }
 func (p *Printing) Bottom() {
-	_, p.Cursor = p.S.Size()
+	_, p.Cursor = p.s.Size()
 	p.Cursor--
 }
 
 func (p *Printing) Putln(str string, highlight bool) {
 	if highlight {
-		puts(p.S, p.Hightlight, p.Indent, p.Cursor, str)
+		puts(p.s, p.Hightlight, p.Indent, p.Cursor, str)
 	} else {
-		puts(p.S, p.Default, p.Indent, p.Cursor, str)
+		puts(p.s, p.Default, p.Indent, p.Cursor, str)
 	}
 	p.Cursor++
 }
 
 func (p *Printing) BottomBar(str string) {
-	_, y := p.S.Size()
+	_, y := p.s.Size()
 
-	puts(p.S, p.Menu, 0, y-1, "  "+str)
+	puts(p.s, p.Menu, 0, y-1, "  "+str)
 }
 
 func puts(s tcell.Screen, style tcell.Style, x, y int, str string) {

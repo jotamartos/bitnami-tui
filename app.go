@@ -16,43 +16,13 @@ func main() {
 
 	p := NewPrinting(s)
 	p.Clear()
-
-	quit := make(chan struct{})
-
 	menu := NewMenu()
 	menu.Print(p)
 
 	p.Show()
-	go func() {
-		for {
-			ev := s.PollEvent()
-			switch ev := ev.(type) {
-			case *tcell.EventKey:
-				switch ev.Key() {
-				case tcell.KeyEscape:
-					close(quit)
-					return
-				case tcell.KeyEnter:
-					menu.SelectToggle()
-					menu.Print(p)
-					p.Show()
+	go menu.EventManager(p)
 
-				case tcell.KeyCtrlL:
-					s.Sync()
-				case tcell.KeyUp:
-					menu.Prev(p)
-					p.Show()
-				case tcell.KeyDown:
-					menu.Next(p)
-					p.Show()
-				}
-			case *tcell.EventResize:
-				s.Sync()
-			}
-		}
-	}()
-
-	<-quit
+	<-menu.Wait
 
 	s.Fini()
 }

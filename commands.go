@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/gdamore/tcell"
 )
 
 type Command struct {
@@ -16,6 +17,7 @@ type Menu struct {
 	Cursor        int
 	BottomBar     bool
 	BottomBarText string
+	Wait          chan int
 }
 
 func (m *Menu) SelectToggle() {
@@ -73,5 +75,35 @@ func NewMenu() *Menu {
 		tmpcs = append(tmpcs, tmpc)
 		i++
 	}
-	return &Menu{Commands: tmpcs, BottomBar: true, BottomBarText: "Press ESC to exit"}
+	channel := make(chan int)
+	return &Menu{Commands: tmpcs, BottomBar: true, BottomBarText: "Press ESC to exit", Wait: channel}
+}
+
+func (menu *Menu) EventManager(p *Printing) {
+	for {
+		ev := p.Screen().PollEvent()
+		switch ev := ev.(type) {
+		case *tcell.EventKey:
+			switch ev.Key() {
+			case tcell.KeyEscape:
+				close(menu.Wait)
+				return
+			case tcell.KeyEnter:
+				menu.SelectToggle()
+				menu.Print(p)
+				p.Show()
+
+			case tcell.KeyCtrlL:
+				p.Sync()
+			case tcell.KeyUp:
+				menu.Prev(p)
+				p.Show()
+			case tcell.KeyDown:
+				menu.Next(p)
+				p.Show()
+			}
+		case *tcell.EventResize:
+			p.Sync()
+		}
+	}
 }
