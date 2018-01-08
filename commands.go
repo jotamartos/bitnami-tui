@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/gdamore/tcell"
 	"os"
+	"os/exec"
 )
 
 type Command struct {
@@ -14,6 +15,9 @@ type Command struct {
 	Args        []Argument
 	Optional    bool
 	Selected    bool
+	Error       error
+	Success     string
+	Fail        string
 }
 
 type Argument struct {
@@ -38,7 +42,7 @@ type Menu struct {
 	p             *Printing
 }
 
-type HandlerCommand func(arg []Argument)
+type HandlerCommand func(c *Command, screen chan string)
 
 func (m *Menu) SelectToggle() {
 	if m.Cursor < len(m.Commands) {
@@ -64,18 +68,102 @@ func (m *Menu) printPageHearder(title string, desc string) {
 	}
 }
 
+func OSCmdHandler(c *Command, ch chan string) {
+	formattedArgs := []string{}
+	c.Error = nil
+
+	defer close(ch)
+
+	for _, a := range c.Args {
+		if a.IsBoolean {
+			if a.Valuebool {
+				formattedArgs = append(formattedArgs, "-"+a.Flag)
+			} else {
+				break
+			}
+		} else {
+			formattedArgs = append(formattedArgs, "-"+a.Flag, a.Value)
+		}
+	}
+
+	cmd := exec.Command(c.Cli, formattedArgs...)
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		c.Error = err
+		return
+	}
+	c.Error = cmd.Start()
+	if c.Error != nil {
+		return
+	}
+	end := false
+	for !end {
+		p := make([]byte, 1)
+		if _, err := stdout.Read(p); err == nil {
+			ch <- string(p)
+		} else {
+			end = true
+		}
+	}
+
+	c.Error = cmd.Wait()
+}
+
+func (m *Menu) executeCommand(c *Command) chan string {
+	if c.Execute == nil {
+		c.Execute = OSCmdHandler
+	}
+	ch := make(chan string)
+	go c.Execute(c, ch)
+	return ch
+}
+
+func (m *Menu) RunCommand(c *Command) {
+	ch := m.executeCommand(c)
+	pb := NewProgressBar(m.p)
+	go pb.Start()
+
+	for ok := true; ok; {
+		_, ok = <-ch
+	}
+	pb.Stop()
+	m.ShowResult(c)
+}
+func (m *Menu) ShowResult(c *Command) {
+	if c.Error != nil {
+		m.p.Clear()
+		m.printPageHearder(c.Title, c.Fail+" Error ocurred:"+c.Error.Error())
+	} else {
+		m.p.Clear()
+		m.printPageHearder(c.Title, "Success! "+c.Success)
+	}
+	if m.BottomBar {
+		m.p.BottomBar(m.BackText)
+	}
+	m.p.Show()
+
+}
+
 func (m *Menu) ShowCommand() {
-	m.p.Clear()
 	if m.Cursor >= len(m.Commands) {
 		fmt.Println("Cursor exceed array")
 		return
 	}
 	c := m.Commands[m.Cursor]
+	m.p.Clear()
+
+	runNow := (c.Args == nil || len(c.Args) == 0)
 	m.printPageHearder(c.Title, c.Description)
-	if m.BottomBar {
+
+	if m.BottomBar && !runNow {
 		m.p.BottomBar(m.BackText)
 	}
 	m.p.Show()
+
+	if runNow {
+		m.RunCommand(&c)
+	}
+
 }
 
 func (m *Menu) Show() {
@@ -142,10 +230,6 @@ func (menu *Menu) EventCommandManager() {
 				go menu.EventManager()
 				return
 			case tcell.KeyEnter:
-				if menu.IsToggle() {
-					menu.SelectToggle()
-				}
-				menu.ShowCommand()
 
 			case tcell.KeyCtrlL:
 				menu.p.Sync()

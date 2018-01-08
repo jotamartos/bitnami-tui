@@ -49,9 +49,10 @@ func NewPrinting(s tcell.Screen, style *Style) *Printing {
 }
 
 type Printing struct {
-	s      tcell.Screen
-	Cursor int
-	style  *Style
+	s       tcell.Screen
+	Cursor  int
+	xcursor int
+	style   *Style
 }
 
 func (p *Printing) Clear() {
@@ -87,6 +88,13 @@ func (p *Printing) Putln(str string, highlight bool) {
 	}
 	p.Cursor++
 }
+func (p *Printing) Put(str string, highlight bool) {
+	if highlight {
+		p.Cursor = p.puts(p.style.Hightlight, p.style.Indent+p.xcursor, p.Cursor, str)
+	} else {
+		p.Cursor = p.puts(p.style.Default, p.style.Indent+p.xcursor, p.Cursor, str)
+	}
+}
 
 func (p *Printing) PutH1(str string, highlight bool) {
 	p.Cursor = p.puts(p.style.H1, p.style.Indent, p.Cursor, str)
@@ -95,8 +103,47 @@ func (p *Printing) PutH1(str string, highlight bool) {
 
 func (p *Printing) BottomBar(str string) {
 	_, y := p.s.Size()
-
 	p.puts(p.style.Menu, 0, y-1, "  "+str)
+}
+func (p *Printing) putc(style tcell.Style, x, y int, str string) int {
+	i := 0
+	var deferred []rune
+	dwidth := 0
+	xScreen, _ := p.s.Size()
+
+	for _, r := range str {
+		if x+i >= xScreen-p.style.Indent {
+			i = 0
+			y++
+		}
+		switch runewidth.RuneWidth(r) {
+		case 0:
+			if len(deferred) == 0 {
+				deferred = append(deferred, ' ')
+				dwidth = 1
+			}
+		case 1:
+			if len(deferred) != 0 {
+				p.s.SetContent(x+i, y, deferred[0], deferred[1:], style)
+				i += dwidth
+			}
+			deferred = nil
+			dwidth = 1
+		case 2:
+			if len(deferred) != 0 {
+				p.s.SetContent(x+i, y, deferred[0], deferred[1:], style)
+				i += dwidth
+			}
+			deferred = nil
+			dwidth = 2
+		}
+		deferred = append(deferred, r)
+	}
+	if len(deferred) != 0 {
+		p.s.SetContent(x+i, y, deferred[0], deferred[1:], style)
+		i += dwidth
+	}
+	return y
 }
 
 func (p *Printing) puts(style tcell.Style, x, y int, str string) int {

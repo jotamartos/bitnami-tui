@@ -14,7 +14,7 @@ func NewTestMenu() *Menu {
 	for i < 5 {
 		tmpc := Command{
 			Title:       fmt.Sprintf("Command %d", i),
-			Cli:         "foo",
+			Cli:         "./testcommands/waitok.sh",
 			Description: m.Description,
 		}
 		tmpcs = append(tmpcs, tmpc)
