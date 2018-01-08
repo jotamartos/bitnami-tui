@@ -7,10 +7,23 @@ import (
 )
 
 type Command struct {
-	Title    string
-	Cli      string
-	Optional bool
-	Selected bool
+	Title       string
+	Description string
+	Cli         string
+	Execute     HandlerCommand
+	Args        []Argument
+	Optional    bool
+	Selected    bool
+}
+
+type Argument struct {
+	Envar       string
+	Flag        string
+	Title       string
+	Description string
+	Value       string
+	IsBoolean   bool
+	Valuebool   bool
 }
 
 type Menu struct {
@@ -20,27 +33,54 @@ type Menu struct {
 	Cursor        int
 	BottomBar     bool
 	BottomBarText string
+	BackText      string
 	Wait          chan int
 	p             *Printing
 }
+
+type HandlerCommand func(arg []Argument)
 
 func (m *Menu) SelectToggle() {
 	if m.Cursor < len(m.Commands) {
 		m.Commands[m.Cursor].Selected = !m.Commands[m.Cursor].Selected
 	}
 }
+func (m *Menu) IsToggle() bool {
+	if m.Cursor < len(m.Commands) {
+		return m.Commands[m.Cursor].Optional
+	}
+	return false
+}
 
-func (m *Menu) Show() {
-	m.p.Clear()
-	if m.Title != "" {
-		m.p.Putln(m.Title, true)
+func (m *Menu) printPageHearder(title string, desc string) {
+	if title != "" {
+		m.p.Putln(title, true)
 		m.p.Putln("\n\n", false)
 	}
 
-	if m.Description != "" {
-		m.p.Putln(m.Description, false)
+	if desc != "" {
+		m.p.Putln(desc, false)
 		m.p.Putln("\n", false)
 	}
+}
+
+func (m *Menu) ShowCommand() {
+	m.p.Clear()
+	if m.Cursor >= len(m.Commands) {
+		fmt.Println("Cursor exceed array")
+		return
+	}
+	c := m.Commands[m.Cursor]
+	m.printPageHearder(c.Title, c.Description)
+	if m.BottomBar {
+		m.p.BottomBar(m.BackText)
+	}
+	m.p.Show()
+}
+
+func (m *Menu) Show() {
+	m.p.Clear()
+	m.printPageHearder(m.Title, m.Description)
 	for i, c := range m.Commands {
 		title := c.Title
 		if c.Optional {
@@ -88,7 +128,32 @@ func NewMenu(style *Style) *Menu {
 		os.Exit(1)
 	}
 	p := NewPrinting(s, style)
-	return &Menu{BottomBar: true, BottomBarText: "Press ESC to exit", Wait: channel, p: p}
+	return &Menu{BottomBar: true, BottomBarText: "Press ESC to exit", BackText: "Press ESC to go back", Wait: channel, p: p}
+}
+
+func (menu *Menu) EventCommandManager() {
+	for {
+		ev := menu.p.Screen().PollEvent()
+		switch ev := ev.(type) {
+		case *tcell.EventKey:
+			switch ev.Key() {
+			case tcell.KeyEscape:
+				menu.Show()
+				go menu.EventManager()
+				return
+			case tcell.KeyEnter:
+				if menu.IsToggle() {
+					menu.SelectToggle()
+				}
+				menu.ShowCommand()
+
+			case tcell.KeyCtrlL:
+				menu.p.Sync()
+			}
+		case *tcell.EventResize:
+			menu.p.Sync()
+		}
+	}
 }
 
 func (menu *Menu) EventManager() {
@@ -101,9 +166,12 @@ func (menu *Menu) EventManager() {
 				close(menu.Wait)
 				return
 			case tcell.KeyEnter:
-				menu.SelectToggle()
-				menu.Show()
-				menu.p.Show()
+				if menu.IsToggle() {
+					menu.SelectToggle()
+				}
+				menu.ShowCommand()
+				go menu.EventCommandManager()
+				return
 
 			case tcell.KeyCtrlL:
 				menu.p.Sync()
