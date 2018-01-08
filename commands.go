@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/gdamore/tcell"
+	"os"
 )
 
 type Command struct {
@@ -18,6 +19,7 @@ type Menu struct {
 	BottomBar     bool
 	BottomBarText string
 	Wait          chan int
+	p             *Printing
 }
 
 func (m *Menu) SelectToggle() {
@@ -26,8 +28,8 @@ func (m *Menu) SelectToggle() {
 	}
 }
 
-func (m *Menu) Print(p *Printing) {
-	p.Clear()
+func (m *Menu) Show() {
+	m.p.Clear()
 	for i, c := range m.Commands {
 		title := c.Title
 		if c.Optional {
@@ -37,51 +39,50 @@ func (m *Menu) Print(p *Printing) {
 			}
 			title = check + " " + title
 		}
-		p.Putln(title, i == m.Cursor)
+		m.p.Putln(title, i == m.Cursor)
 	}
 	if m.BottomBar {
-		p.BottomBar(m.BottomBarText)
+		m.p.BottomBar(m.BottomBarText)
 	}
+	m.p.Show()
+}
+func (m *Menu) Quit() {
+	m.p.s.Fini()
 }
 
-func (m *Menu) Next(p *Printing) {
+func (m *Menu) Next() {
 	if m.Cursor < len(m.Commands)-1 {
 		m.Cursor++
 	} else {
 		m.Cursor = 0
 	}
-	p.Clear()
-	m.Print(p)
+	m.p.Clear()
+	m.Show()
 }
-func (m *Menu) Prev(p *Printing) {
+func (m *Menu) Prev() {
 	if m.Cursor > 0 {
 		m.Cursor--
 	} else {
 		m.Cursor = len(m.Commands) - 1
 	}
-	p.Clear()
-	m.Print(p)
+	m.p.Clear()
+	m.Show()
 }
 
 func NewMenu() *Menu {
-	tmpcs := []Command{}
-	i := 1
-	for i < 5 {
-		tmpc := Command{
-			Title:    fmt.Sprintf("Command %d", i),
-			Cli:      "foo",
-			Optional: true,
-		}
-		tmpcs = append(tmpcs, tmpc)
-		i++
-	}
 	channel := make(chan int)
-	return &Menu{Commands: tmpcs, BottomBar: true, BottomBarText: "Press ESC to exit", Wait: channel}
+	s, e := tcell.NewScreen()
+	if e != nil {
+		fmt.Fprintf(os.Stderr, "%v\n", e)
+		os.Exit(1)
+	}
+	p := NewPrinting(s)
+	return &Menu{BottomBar: true, BottomBarText: "Press ESC to exit", Wait: channel, p: p}
 }
 
-func (menu *Menu) EventManager(p *Printing) {
+func (menu *Menu) EventManager() {
 	for {
-		ev := p.Screen().PollEvent()
+		ev := menu.p.Screen().PollEvent()
 		switch ev := ev.(type) {
 		case *tcell.EventKey:
 			switch ev.Key() {
@@ -90,20 +91,20 @@ func (menu *Menu) EventManager(p *Printing) {
 				return
 			case tcell.KeyEnter:
 				menu.SelectToggle()
-				menu.Print(p)
-				p.Show()
+				menu.Show()
+				menu.p.Show()
 
 			case tcell.KeyCtrlL:
-				p.Sync()
+				menu.p.Sync()
 			case tcell.KeyUp:
-				menu.Prev(p)
-				p.Show()
+				menu.Prev()
+				menu.p.Show()
 			case tcell.KeyDown:
-				menu.Next(p)
-				p.Show()
+				menu.Next()
+				menu.p.Show()
 			}
 		case *tcell.EventResize:
-			p.Sync()
+			menu.p.Sync()
 		}
 	}
 }
