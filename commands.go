@@ -14,6 +14,8 @@ type Command struct {
 }
 
 type Menu struct {
+	Title         string
+	Description   string
 	Commands      []Command
 	Cursor        int
 	BottomBar     bool
@@ -30,6 +32,15 @@ func (m *Menu) SelectToggle() {
 
 func (m *Menu) Show() {
 	m.p.Clear()
+	if m.Title != "" {
+		m.p.Putln(m.Title, true)
+		m.p.Putln("\n\n", false)
+	}
+
+	if m.Description != "" {
+		m.p.Putln(m.Description, false)
+		m.p.Putln("\n", false)
+	}
 	for i, c := range m.Commands {
 		title := c.Title
 		if c.Optional {
@@ -69,14 +80,14 @@ func (m *Menu) Prev() {
 	m.Show()
 }
 
-func NewMenu() *Menu {
+func NewMenu(style *Style) *Menu {
 	channel := make(chan int)
 	s, e := tcell.NewScreen()
 	if e != nil {
 		fmt.Fprintf(os.Stderr, "%v\n", e)
 		os.Exit(1)
 	}
-	p := NewPrinting(s)
+	p := NewPrinting(s, style)
 	return &Menu{BottomBar: true, BottomBarText: "Press ESC to exit", Wait: channel, p: p}
 }
 

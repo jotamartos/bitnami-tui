@@ -12,7 +12,25 @@ var styleBitnamiText = tcell.StyleDefault.Foreground(tcell.ColorWhite).Backgroun
 var styleBitnamiTextHighlight = tcell.StyleDefault.Background(tcell.ColorWhite).Foreground(tcell.Color17).Bold(true)
 var styleBitnamiMenu = tcell.StyleDefault.Background(tcell.ColorSilver).Foreground(tcell.Color17).Bold(true)
 
-func NewPrinting(s tcell.Screen) *Printing {
+type Style struct {
+	Indent     int
+	Hightlight tcell.Style
+	Default    tcell.Style
+	Menu       tcell.Style
+	H1         tcell.Style
+}
+
+func DefaultStyle() *Style {
+	return &Style{
+		Hightlight: styleBitnamiTextHighlight,
+		Default:    styleBitnamiText,
+		Menu:       styleBitnamiMenu,
+		H1:         styleBitnamiTextHighlight,
+		Indent:     2,
+	}
+}
+
+func NewPrinting(s tcell.Screen, style *Style) *Printing {
 	encoding.Register()
 
 	if e := s.Init(); e != nil {
@@ -25,21 +43,15 @@ func NewPrinting(s tcell.Screen) *Printing {
 	s.Clear()
 
 	return &Printing{
-		s:          s,
-		Hightlight: styleBitnamiTextHighlight,
-		Default:    styleBitnamiText,
-		Menu:       styleBitnamiMenu,
-		Indent:     2,
+		s:     s,
+		style: style,
 	}
 }
 
 type Printing struct {
-	s          tcell.Screen
-	Cursor     int
-	Indent     int
-	Hightlight tcell.Style
-	Default    tcell.Style
-	Menu       tcell.Style
+	s      tcell.Screen
+	Cursor int
+	style  *Style
 }
 
 func (p *Printing) Clear() {
@@ -69,24 +81,35 @@ func (p *Printing) Bottom() {
 
 func (p *Printing) Putln(str string, highlight bool) {
 	if highlight {
-		p.puts(p.Hightlight, p.Indent, p.Cursor, str)
+		p.Cursor = p.puts(p.style.Hightlight, p.style.Indent, p.Cursor, str)
 	} else {
-		p.puts(p.Default, p.Indent, p.Cursor, str)
+		p.Cursor = p.puts(p.style.Default, p.style.Indent, p.Cursor, str)
 	}
+	p.Cursor++
+}
+
+func (p *Printing) PutH1(str string, highlight bool) {
+	p.Cursor = p.puts(p.style.H1, p.style.Indent, p.Cursor, str)
 	p.Cursor++
 }
 
 func (p *Printing) BottomBar(str string) {
 	_, y := p.s.Size()
 
-	p.puts(p.Menu, 0, y-1, "  "+str)
+	p.puts(p.style.Menu, 0, y-1, "  "+str)
 }
 
-func (p *Printing) puts(style tcell.Style, x, y int, str string) {
+func (p *Printing) puts(style tcell.Style, x, y int, str string) int {
 	i := 0
 	var deferred []rune
 	dwidth := 0
+	xScreen, _ := p.s.Size()
+
 	for _, r := range str {
+		if x+i >= xScreen-p.style.Indent {
+			i = 0
+			y++
+		}
 		switch runewidth.RuneWidth(r) {
 		case 0:
 			if len(deferred) == 0 {
@@ -114,10 +137,10 @@ func (p *Printing) puts(style tcell.Style, x, y int, str string) {
 		p.s.SetContent(x+i, y, deferred[0], deferred[1:], style)
 		i += dwidth
 	}
-	xScreen, _ := p.s.Size()
 	for i < xScreen {
 		p.s.SetContent(x+i, y, ' ', nil, style)
 		i++
 	}
+	return y
 
 }
