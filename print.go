@@ -11,6 +11,7 @@ import (
 var styleBitnamiText = tcell.StyleDefault.Foreground(tcell.ColorWhite).Background(tcell.Color17).Bold(true)
 var styleBitnamiTextHighlight = tcell.StyleDefault.Background(tcell.ColorWhite).Foreground(tcell.Color17).Bold(true)
 var styleBitnamiMenu = tcell.StyleDefault.Background(tcell.ColorSilver).Foreground(tcell.Color17).Bold(true)
+var styleBitnamiInput = tcell.StyleDefault.Foreground(tcell.ColorLime).Background(tcell.Color17).Bold(false)
 
 type Style struct {
 	Indent     int
@@ -18,6 +19,7 @@ type Style struct {
 	Default    tcell.Style
 	Menu       tcell.Style
 	H1         tcell.Style
+	Input      tcell.Style
 }
 
 func DefaultStyle() *Style {
@@ -26,6 +28,7 @@ func DefaultStyle() *Style {
 		Default:    styleBitnamiText,
 		Menu:       styleBitnamiMenu,
 		H1:         styleBitnamiTextHighlight,
+		Input:      styleBitnamiInput,
 		Indent:     2,
 	}
 }
@@ -91,12 +94,17 @@ func (p *Printing) Putln(str string, highlight bool) {
 	}
 	p.Cursor++
 }
+
 func (p *Printing) Put(str string, highlight bool) {
 	if highlight {
 		p.Cursor = p.puts(p.style.Hightlight, p.style.Indent+p.xcursor, p.Cursor, str)
 	} else {
 		p.Cursor = p.puts(p.style.Default, p.style.Indent+p.xcursor, p.Cursor, str)
 	}
+}
+func (p *Printing) PutEcho(str string, style tcell.Style) {
+
+	p.puts(style, p.style.Indent+p.xcursor, p.Cursor, str)
 }
 
 func (p *Printing) PutH1(str string, highlight bool) {

@@ -40,10 +40,14 @@ type Menu struct {
 	BottomBar     bool
 	BottomBarText string
 	BackText      string
+	BoolText      string
+	ValueText     string
 	Wait          chan int
 	p             *Printing
 	breadCrum     string
 	argIndex      int
+	enableScape   bool
+	runeBuffer    []rune
 }
 
 func (c *Command) BreadCrum() string {
@@ -145,6 +149,8 @@ func (m *Menu) RunCommand(c *Command) {
 	m.ShowResult(c)
 }
 func (m *Menu) ShowResult(c *Command) {
+	m.enableScape = true
+
 	if c.Error != nil {
 		m.p.Clear()
 		m.printPageHearder(c.BreadCrum(), c.Fail+" Error ocurred:"+c.Error.Error())
@@ -157,6 +163,11 @@ func (m *Menu) ShowResult(c *Command) {
 	}
 	m.p.Show()
 
+}
+func (m *Menu) NextCommand() {
+	m.argIndex++
+	m.runeBuffer = []rune{}
+	m.ShowCommand()
 }
 
 func (m *Menu) ShowCommand() {
@@ -174,13 +185,18 @@ func (m *Menu) ShowCommand() {
 		m.printPageHearder(c.BreadCrum()+" > "+c.Args[m.argIndex].Name, c.Description)
 		m.p.Putln(c.Args[m.argIndex].Title+":", false)
 		m.p.Putln(c.Args[m.argIndex].Description, false)
+		if c.Args[m.argIndex].IsBoolean {
+			m.p.BottomBar(m.BoolText)
+		} else {
+			m.p.BottomBar(m.ValueText)
+			m.p.PutEcho(string([]rune{tcell.RuneBlock}), m.p.style.Input)
+		}
+
 	} else {
+		m.enableScape = false
 		m.printPageHearder(c.BreadCrum(), c.Description)
 	}
 
-	if m.BottomBar && !runNow {
-		m.p.BottomBar(m.BackText)
-	}
 	m.p.Show()
 
 	if runNow {
@@ -208,6 +224,15 @@ func (m *Menu) Show() {
 	}
 	m.p.Show()
 }
+func (m *Menu) CurrentCommand() *Command {
+	if m.Cursor < len(m.Commands) {
+		return &m.Commands[m.Cursor]
+	} else {
+		return nil
+	}
+
+}
+
 func (m *Menu) Quit() {
 	m.p.s.Fini()
 }
@@ -239,26 +264,67 @@ func NewMenu(style *Style) *Menu {
 		os.Exit(1)
 	}
 	p := NewPrinting(s, style)
-	return &Menu{BottomBar: true, BottomBarText: "Press ESC to exit", BackText: "Press ESC to go back", Wait: channel, p: p}
+	return &Menu{
+		BottomBar:     true,
+		BottomBarText: "Press ESC to exit",
+		BackText:      "Press ESC to go back",
+		BoolText:      "Press Y for yes or N for No, ESC to Cancel",
+		ValueText:     "Type your answer and press ENTER to continue, or ESC to Cancel",
+		Wait:          channel,
+		p:             p,
+		runeBuffer:    []rune{},
+	}
 }
 
 func (menu *Menu) EventCommandManager() {
 	for {
 		ev := menu.p.Screen().PollEvent()
+		cmd := menu.CurrentCommand()
+		var arg *Argument
+		if cmd != nil && menu.argIndex < len(cmd.Args) {
+			arg = &cmd.Args[menu.argIndex]
+		}
 		switch ev := ev.(type) {
 		case *tcell.EventKey:
 			switch ev.Key() {
 			case tcell.KeyEscape:
-				menu.Show()
-				go menu.EventManager()
-				return
+				if menu.enableScape {
+					menu.Show()
+					go menu.EventManager()
+					return
+				}
 			case tcell.KeyEnter:
-				menu.argIndex++
-				menu.ShowCommand()
-
+				if arg != nil && !arg.IsBoolean {
+					arg.Value = string(menu.runeBuffer)
+					menu.NextCommand()
+				}
 			case tcell.KeyCtrlL:
 				menu.p.Sync()
+			case tcell.KeyBackspace, tcell.KeyBackspace2:
+				if arg != nil && !arg.IsBoolean {
+					menu.runeBuffer = menu.runeBuffer[:len(menu.runeBuffer)-1]
+					menu.p.PutEcho(string(append(menu.runeBuffer, tcell.RuneBlock)), menu.p.style.Input)
+					menu.p.Show()
+				}
+			case tcell.KeyRune:
+				if arg != nil && arg.IsBoolean {
+					if ev.Rune() == 'y' || ev.Rune() == 'Y' {
+						arg.Valuebool = true
+						menu.NextCommand()
+						break
+					}
+					if ev.Rune() == 'N' || ev.Rune() == 'n' {
+						arg.Valuebool = false
+						menu.NextCommand()
+						break
+					}
+				} else {
+					menu.runeBuffer = append(menu.runeBuffer, ev.Rune())
+					menu.p.PutEcho(string(append(menu.runeBuffer, tcell.RuneBlock)), menu.p.style.Input)
+					menu.p.Show()
+				}
 			}
+
 		case *tcell.EventResize:
 			menu.p.Sync()
 		}
@@ -279,6 +345,7 @@ func (menu *Menu) EventManager() {
 					menu.SelectToggle()
 				}
 				menu.argIndex = 0
+				menu.enableScape = true
 				menu.ShowCommand()
 				go menu.EventCommandManager()
 				return

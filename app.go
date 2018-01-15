@@ -25,7 +25,7 @@ func NewTestMenu() *Menu {
 			Description: "test of running a command with arguments",
 			Args: []Argument{
 				Argument{
-					Description: "This is a sample flag bool",
+					Description: "Would you like to set this is a sample flag bool?",
 					Title:       "Sample Flag Bool",
 					IsBoolean:   true,
 					Name:        "first",
@@ -38,7 +38,7 @@ func NewTestMenu() *Menu {
 					IsFlag:      true,
 				},
 				Argument{
-					Description: "This is a sample bool",
+					Description: "Would you like to set this is a sample bool?",
 					Title:       "Sample Bool",
 					IsBoolean:   true,
 					Name:        "third",
