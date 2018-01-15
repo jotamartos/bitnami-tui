@@ -32,6 +32,10 @@
 			"Rev": "97311d9f7767e3d6f422ea06661bc2c7a19e8a5d"
 		},
 		{
+			"ImportPath": "github.com/vtuson/tui",
+			"Rev": "2d069056149212db4e58b4934523032398de05d6"
+		},
+		{
 			"ImportPath": "golang.org/x/text/encoding",
 			"Rev": "88f656faf3f37f690df1a32515b479415e1a6769"
 		},
