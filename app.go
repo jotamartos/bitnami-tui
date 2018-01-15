@@ -64,6 +64,11 @@ func NewTestMenu() *Menu {
 			Success: "Yey it works",
 			Fail:    "oh, it didnt work.",
 		},
+		Command{
+			Title:   "Done cmd",
+			Disable: true,
+			Status:  "Done",
+		},
 	}
 	m.Commands = tmpcs
 	return m

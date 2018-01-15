@@ -12,6 +12,7 @@ var styleBitnamiText = tcell.StyleDefault.Foreground(tcell.ColorWhite).Backgroun
 var styleBitnamiTextHighlight = tcell.StyleDefault.Background(tcell.ColorWhite).Foreground(tcell.Color17).Bold(true)
 var styleBitnamiMenu = tcell.StyleDefault.Background(tcell.ColorSilver).Foreground(tcell.Color17).Bold(true)
 var styleBitnamiInput = tcell.StyleDefault.Foreground(tcell.ColorLime).Background(tcell.Color17).Bold(false)
+var styleBitnamiDisable = tcell.StyleDefault.Foreground(tcell.ColorSilver).Background(tcell.Color17).Bold(false)
 
 type Style struct {
 	Indent     int
@@ -20,6 +21,7 @@ type Style struct {
 	Menu       tcell.Style
 	H1         tcell.Style
 	Input      tcell.Style
+	Disable    tcell.Style
 }
 
 func DefaultStyle() *Style {
@@ -29,6 +31,7 @@ func DefaultStyle() *Style {
 		Menu:       styleBitnamiMenu,
 		H1:         styleBitnamiTextHighlight,
 		Input:      styleBitnamiInput,
+		Disable:    styleBitnamiDisable,
 		Indent:     2,
 	}
 }
@@ -92,6 +95,10 @@ func (p *Printing) Putln(str string, highlight bool) {
 	} else {
 		p.Cursor = p.puts(p.style.Default, p.style.Indent, p.Cursor, str)
 	}
+	p.Cursor++
+}
+func (p *Printing) PutlnDisable(str string) {
+	p.Cursor = p.puts(p.style.Disable, p.style.Indent, p.Cursor, str)
 	p.Cursor++
 }
 

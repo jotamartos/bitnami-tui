@@ -19,6 +19,8 @@ type Command struct {
 	Success     string
 	Fail        string
 	breadCrum   string
+	Disable     bool
+	Status      string
 }
 
 type Argument struct {
@@ -229,7 +231,15 @@ func (m *Menu) Show() {
 			}
 			title = check + " " + title
 		}
-		m.p.Putln(title, i == m.Cursor)
+		status := ""
+		if c.Status != "" {
+			status = " [" + c.Status + "]"
+		}
+		if c.Disable && i != m.Cursor {
+			m.p.PutlnDisable(title + status)
+			continue
+		}
+		m.p.Putln(title+status, i == m.Cursor)
 	}
 	if m.BottomBar {
 		m.p.BottomBar(m.BottomBarText)
@@ -353,8 +363,13 @@ func (menu *Menu) EventManager() {
 				close(menu.Wait)
 				return
 			case tcell.KeyEnter:
+				cmd := menu.CurrentCommand()
+				if cmd != nil && cmd.Disable {
+					continue
+				}
 				if menu.IsToggle() {
 					menu.SelectToggle()
+					continue
 				}
 				menu.argIndex = 0
 				menu.enableScape = true
