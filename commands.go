@@ -18,6 +18,7 @@ type Command struct {
 	Error       error
 	Success     string
 	Fail        string
+	breadCrum   string
 }
 
 type Argument struct {
@@ -40,6 +41,19 @@ type Menu struct {
 	BackText      string
 	Wait          chan int
 	p             *Printing
+	breadCrum     string
+}
+
+func (c *Command) BreadCrum() string {
+	return c.breadCrum + " > " + c.Title
+}
+
+func (m *Menu) BreadCrum() string {
+	path := ""
+	if m.breadCrum != "" {
+		path = m.breadCrum + " > "
+	}
+	return path + m.Title
 }
 
 type HandlerCommand func(c *Command, screen chan string)
@@ -132,10 +146,10 @@ func (m *Menu) RunCommand(c *Command) {
 func (m *Menu) ShowResult(c *Command) {
 	if c.Error != nil {
 		m.p.Clear()
-		m.printPageHearder(c.Title, c.Fail+" Error ocurred:"+c.Error.Error())
+		m.printPageHearder(c.BreadCrum(), c.Fail+" Error ocurred:"+c.Error.Error())
 	} else {
 		m.p.Clear()
-		m.printPageHearder(c.Title, "Success! "+c.Success)
+		m.printPageHearder(c.BreadCrum(), "Success! "+c.Success)
 	}
 	if m.BottomBar {
 		m.p.BottomBar(m.BackText)
@@ -153,7 +167,9 @@ func (m *Menu) ShowCommand() {
 	m.p.Clear()
 
 	runNow := (c.Args == nil || len(c.Args) == 0)
-	m.printPageHearder(c.Title, c.Description)
+
+	c.breadCrum = m.BreadCrum()
+	m.printPageHearder(c.BreadCrum(), c.Description)
 
 	if m.BottomBar && !runNow {
 		m.p.BottomBar(m.BackText)
@@ -168,7 +184,7 @@ func (m *Menu) ShowCommand() {
 
 func (m *Menu) Show() {
 	m.p.Clear()
-	m.printPageHearder(m.Title, m.Description)
+	m.printPageHearder(m.BreadCrum(), m.Description)
 	for i, c := range m.Commands {
 		title := c.Title
 		if c.Optional {
