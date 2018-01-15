@@ -47,6 +47,23 @@ func NewTestMenu() *Menu {
 			Success: "Yey it works",
 			Fail:    "oh, it didnt work.",
 		},
+		Command{
+			Title:       "Args Envar",
+			Cli:         "./testcommands/env.sh",
+			Description: "test of running a command with arguments via envar",
+			Args: []Argument{
+				Argument{
+					Description: "Would you like to set this is a sample Envar bool?",
+					Title:       "Sample Envar Bool",
+					IsBoolean:   true,
+					Name:        "first",
+					IsFlag:      true,
+					Envar:       "FIRSTTEST",
+				},
+			},
+			Success: "Yey it works",
+			Fail:    "oh, it didnt work.",
+		},
 	}
 	m.Commands = tmpcs
 	return m

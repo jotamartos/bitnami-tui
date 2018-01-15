@@ -94,6 +94,18 @@ func OSCmdHandler(c *Command, ch chan string) {
 
 	defer close(ch)
 	for _, a := range c.Args {
+		if a.Envar != "" {
+			if a.IsBoolean {
+				if a.Valuebool {
+					os.Setenv(a.Envar, "true")
+				} else {
+					os.Unsetenv(a.Envar)
+				}
+			} else {
+				os.Setenv(a.Envar, a.Value)
+			}
+			continue
+		}
 		if a.IsBoolean {
 			if a.Valuebool {
 				if a.IsFlag {
