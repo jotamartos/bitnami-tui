@@ -79,6 +79,9 @@ func (p *Printing) Bottom() {
 	_, p.Cursor = p.s.Size()
 	p.Cursor--
 }
+func (p *Printing) Return() {
+	p.Cursor++
+}
 
 func (p *Printing) Putln(str string, highlight bool) {
 	if highlight {

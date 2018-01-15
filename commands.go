@@ -23,7 +23,8 @@ type Command struct {
 
 type Argument struct {
 	Envar       string
-	Flag        string
+	Name        string
+	IsFlag      bool
 	Title       string
 	Description string
 	Value       string
@@ -42,6 +43,7 @@ type Menu struct {
 	Wait          chan int
 	p             *Printing
 	breadCrum     string
+	argIndex      int
 }
 
 func (c *Command) BreadCrum() string {
@@ -73,30 +75,33 @@ func (m *Menu) IsToggle() bool {
 func (m *Menu) printPageHearder(title string, desc string) {
 	if title != "" {
 		m.p.Putln(title, true)
-		m.p.Putln("\n\n", false)
+		m.p.Return()
 	}
 
 	if desc != "" {
 		m.p.Putln(desc, false)
-		m.p.Putln("\n", false)
+		m.p.Return()
 	}
 }
 
 func OSCmdHandler(c *Command, ch chan string) {
-	formattedArgs := []string{}
+	formattedArgs := []string{"test"}
 	c.Error = nil
 
 	defer close(ch)
-
 	for _, a := range c.Args {
 		if a.IsBoolean {
 			if a.Valuebool {
-				formattedArgs = append(formattedArgs, "-"+a.Flag)
+				if a.IsFlag {
+					formattedArgs = append(formattedArgs, "-"+a.Name)
+				} else {
+					formattedArgs = append(formattedArgs, a.Name)
+				}
 			} else {
-				break
+				continue
 			}
 		} else {
-			formattedArgs = append(formattedArgs, "-"+a.Flag, a.Value)
+			formattedArgs = append(formattedArgs, "-"+a.Name, a.Value)
 		}
 	}
 
@@ -123,17 +128,13 @@ func OSCmdHandler(c *Command, ch chan string) {
 	c.Error = cmd.Wait()
 }
 
-func (m *Menu) executeCommand(c *Command) chan string {
+func (m *Menu) RunCommand(c *Command) {
 	if c.Execute == nil {
 		c.Execute = OSCmdHandler
 	}
 	ch := make(chan string)
 	go c.Execute(c, ch)
-	return ch
-}
 
-func (m *Menu) RunCommand(c *Command) {
-	ch := m.executeCommand(c)
 	pb := NewProgressBar(m.p)
 	go pb.Start()
 
@@ -166,10 +167,16 @@ func (m *Menu) ShowCommand() {
 	c := m.Commands[m.Cursor]
 	m.p.Clear()
 
-	runNow := (c.Args == nil || len(c.Args) == 0)
+	runNow := (c.Args == nil || len(c.Args) == 0 || m.argIndex >= len(c.Args))
 
 	c.breadCrum = m.BreadCrum()
-	m.printPageHearder(c.BreadCrum(), c.Description)
+	if !runNow {
+		m.printPageHearder(c.BreadCrum()+" > "+c.Args[m.argIndex].Name, c.Description)
+		m.p.Putln(c.Args[m.argIndex].Title+":", false)
+		m.p.Putln(c.Args[m.argIndex].Description, false)
+	} else {
+		m.printPageHearder(c.BreadCrum(), c.Description)
+	}
 
 	if m.BottomBar && !runNow {
 		m.p.BottomBar(m.BackText)
@@ -246,6 +253,8 @@ func (menu *Menu) EventCommandManager() {
 				go menu.EventManager()
 				return
 			case tcell.KeyEnter:
+				menu.argIndex++
+				menu.ShowCommand()
 
 			case tcell.KeyCtrlL:
 				menu.p.Sync()
@@ -269,6 +278,7 @@ func (menu *Menu) EventManager() {
 				if menu.IsToggle() {
 					menu.SelectToggle()
 				}
+				menu.argIndex = 0
 				menu.ShowCommand()
 				go menu.EventCommandManager()
 				return

@@ -1,24 +1,52 @@
 package main
 
-import (
-	"fmt"
-)
-
 func NewTestMenu() *Menu {
 	m := NewMenu(DefaultStyle())
 	m.Title = "Test"
 	m.Description = `Lorem ipsum dolor sit amet, consectetur adipiscing elit. Maecenas id congue felis,vitae auctor metus. Morbi placerat lectus a velit feugiat, ac tincidunt ex ultricies. Nullam fermentum vestibulum tellus, gravida lacinia dui fringilla eget. Orci varius natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus.`
 
-	tmpcs := []Command{}
-	i := 1
-	for i < 5 {
-		tmpc := Command{
-			Title:       fmt.Sprintf("Command %d", i),
+	tmpcs := []Command{
+		Command{
+			Title:       "No Args",
 			Cli:         "./testcommands/waitok.sh",
-			Description: m.Description,
-		}
-		tmpcs = append(tmpcs, tmpc)
-		i++
+			Description: "test of running a command with out arguments",
+			Success:     "Yey it works",
+		},
+		Command{
+			Title:       "Commmand Failing",
+			Cli:         "./testcommands/args.sh",
+			Description: "test of running a that returns exit 1",
+			Success:     "Yey it works",
+			Fail:        "oh, it didnt work.",
+		},
+		Command{
+			Title:       "Args CLI",
+			Cli:         "./testcommands/args.sh",
+			Description: "test of running a command with arguments",
+			Args: []Argument{
+				Argument{
+					Description: "This is a sample flag bool",
+					Title:       "Sample Flag Bool",
+					IsBoolean:   true,
+					Name:        "first",
+					IsFlag:      true,
+				},
+				Argument{
+					Description: "This is a sample value flag",
+					Title:       "Sample Flag with value",
+					Name:        "second",
+					IsFlag:      true,
+				},
+				Argument{
+					Description: "This is a sample bool",
+					Title:       "Sample Bool",
+					IsBoolean:   true,
+					Name:        "third",
+				},
+			},
+			Success: "Yey it works",
+			Fail:    "oh, it didnt work.",
+		},
 	}
 	m.Commands = tmpcs
 	return m
