@@ -23,6 +23,11 @@
 			"Rev": "996a3f0a689a361b7d5fffdca21dbd5ef0e2d2ac"
 		},
 		{
+			"ImportPath": "github.com/go-ini/ini",
+			"Comment": "v1.32.0",
+			"Rev": "32e4c1e6bc4e7d0d8451aa6b75200d19e37a536a"
+		},
+		{
 			"ImportPath": "github.com/lucasb-eyer/go-colorful",
 			"Rev": "231272389856c976b7500c4fffcc52ddf06ff4eb"
 		},

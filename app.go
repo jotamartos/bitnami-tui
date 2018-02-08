@@ -1,77 +1,117 @@
 package main
 
 import (
+	"fmt"
+	"github.com/go-ini/ini"
 	"github.com/vtuson/tui"
 )
 
-func NewTestMenu() *tui.Menu {
+const (
+	PROP_FILE       = "/opt/bitnami/properties.ini"
+	GENERAL         = "General"
+	BASE_STACK      = "base_stack_key"
+	BASE_STACK_NAME = "base_stack_name"
+	SUPPORT         = "https://community.bitnami.com/"
+)
+
+type Stack struct {
+	Name string
+	Key  string
+}
+
+func LoadStack(file string) *Stack {
+	cfg, err := ini.Load(PROP_FILE)
+	if err != nil {
+		fmt.Println("could not find properties file", PROP_FILE)
+		return nil
+	}
+	sec1, err := cfg.GetSection(GENERAL)
+	if err != nil {
+		fmt.Println("error parsing ini file", err)
+		return nil
+	}
+	keyStack, err := sec1.GetKey(BASE_STACK)
+	if err != nil {
+		fmt.Println("error parsing base stack", err)
+		return nil
+	}
+	nameStack, err := sec1.GetKey(BASE_STACK_NAME)
+	if err != nil {
+		fmt.Println("error parsing base stack name", err)
+		return nil
+	}
+
+	return &Stack{
+		Name: nameStack.Value(),
+		Key:  keyStack.Value(),
+	}
+
+}
+
+func NewTestMenu(stack *Stack) *tui.Menu {
 	m := tui.NewMenu(tui.DefaultStyle())
-	m.Title = "Test"
-	m.Description = `Lorem ipsum dolor sit amet, consectetur adipiscing elit. Maecenas id congue felis,vitae auctor metus. Morbi placerat lectus a velit feugiat, ac tincidunt ex ultricies. Nullam fermentum vestibulum tellus, gravida lacinia dui fringilla eget. Orci varius natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus.`
+	m.Title = fmt.Sprintf("%s Frequently Run Commands", stack.Name)
+	m.Description = `Welcome to Bitnami's frequently run commands, please select from the list below what activities you would like to perform`
 
 	tmpcs := []tui.Command{
 		tui.Command{
-			Title:       "No Args",
-			Cli:         "./testcommands/waitok.sh",
-			Description: "test of running a tui.Command with out arguments",
-			Success:     "Yey it works",
+			Title:       "Remove the Bitnami Banner",
+			Cli:         fmt.Sprintf("/opt/bitnami/apps/%s/bnconfig --disable_banner 1", stack.Key),
+			Description: "Removing the bitnami banner",
+			Success:     "The banner has been removed, if it is still there please go to " + SUPPORT,
+			Fail:        "Something when wrong while removing the banner, Please run bnsupport and open a ticket at:" + SUPPORT,
 		},
 		tui.Command{
-			Title:       "Commmand Failing",
-			Cli:         "./testcommands/args.sh",
-			Description: "test of running a that returns exit 1",
-			Success:     "Yey it works",
-			Fail:        "oh, it didnt work.",
+			Title:       "Check you service status",
+			Cli:         "/opt/bitnami/ctlscript.sh status",
+			Description: "Checking service status",
+			Success:     "This is your status:",
+			Fail:        "Something when wrong while removing the banner, Please run bnsupport and open a ticket at:" + SUPPORT,
+			PrintOut:    true,
 		},
 		tui.Command{
-			Title:       "Args CLI",
-			Cli:         "./testcommands/args.sh",
-			Description: "test of running a tui.Command with arguments",
+			Title:       "Set up Let's Encrypt",
+			Cli:         "/opt/bitnami/letsencrypt/scripts/generate-certificate.sh",
+			Description: "Connect your domain with lets encrypt",
 			Args: []tui.Argument{
 				tui.Argument{
-					Description: "Would you like to set this is a sample flag bool?",
-					Title:       "Sample Flag Bool",
-					IsBoolean:   true,
-					Name:        "first",
+					Description: "Please enter an email associated with your domain",
+					Title:       "Your email",
+					Name:        "m",
 					IsFlag:      true,
 				},
 				tui.Argument{
-					Description: "This is a sample value flag",
-					Title:       "Sample Flag with value",
-					Name:        "second",
+					Description: "Please enter your domain name (mydomain.com)",
+					Title:       "Your domain",
+					Name:        "d",
 					IsFlag:      true,
-				},
-				tui.Argument{
-					Description: "Would you like to set this is a sample bool?",
-					Title:       "Sample Bool",
-					IsBoolean:   true,
-					Name:        "third",
 				},
 			},
-			Success: "Yey it works",
-			Fail:    "oh, it didnt work.",
+			Success: "SSL via Let's Encrypt is now setup in your application",
+			Fail:    "Oh, it didnt work. Please run bnsupport from this tool and contact " + SUPPORT,
 		},
 		tui.Command{
-			Title:       "Args Envar",
-			Cli:         "./testcommands/env.sh",
-			Description: "test of running a command with arguments via envar",
+			Title:       "Set up your Domain for " + stack.Name,
+			Cli:         fmt.Sprintf("/opt/bitnami/apps/%s/bnconfig", stack.Key),
+			Description: "Connect your domain with " + stack.Name,
 			Args: []tui.Argument{
 				tui.Argument{
-					Description: "Would you like to set this is a sample Envar bool?",
-					Title:       "Sample Envar Bool",
-					IsBoolean:   true,
-					Name:        "first",
+					Description: "Please enter your domain name (mydomain.com)",
+					Title:       "Your domain",
+					Name:        "-machine_hostname",
 					IsFlag:      true,
-					Envar:       "FIRSTTEST",
 				},
 			},
-			Success: "Yey it works",
-			Fail:    "oh, it didnt work.",
+			Success: "You domain has been set up",
+			Fail:    "Oh, it didnt work. Please run bnsupport from this tool and contact " + SUPPORT,
 		},
 		tui.Command{
-			Title:   "Done cmd",
-			Disable: true,
-			Status:  "Done",
+			Title:       "Run our support tool (bnsupport)",
+			Cli:         "/opt/bitnami/bnsupport-linux-x64.run",
+			Description: "Collecting data and uploading results",
+			Success:     "Please attached the following ID to your support ticket at " + SUPPORT,
+			Fail:        "Something when wrong while removing the banner, Please go to:" + SUPPORT,
+			PrintOut:    true,
 		},
 	}
 	m.Commands = tmpcs
@@ -79,7 +119,12 @@ func NewTestMenu() *tui.Menu {
 }
 
 func main() {
-	menu := NewTestMenu()
+	stack := LoadStack(PROP_FILE)
+	if stack == nil {
+		return
+	}
+
+	menu := NewTestMenu(stack)
 
 	menu.Show()
 	go menu.EventManager()
