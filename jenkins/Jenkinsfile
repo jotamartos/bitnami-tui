@@ -1,5 +1,8 @@
 #!groovy
-@Library(['jenkins-pipeline-kubernetes', 'jenkins-pipeline-internal-kubernetes']) _
+
+import java.time.ZoneId
+import java.time.Instant
+import java.time.format.DateTimeFormatter
 
 properties([
     parameters([
@@ -9,39 +12,73 @@ properties([
     disableConcurrentBuilds(),
 ])
 
+@NonCPS
+def getTimestamp() {
+    ZoneId zone = ZoneId.systemDefault()
+    DateTimeFormatter df = DateTimeFormatter.ofPattern("yyyyMMddHHmmss").withZone(zone)
+    Instant instant = Instant.now()
+    return df.format(instant)
+}
+
 try {
     timeout(time: 30, unit: 'MINUTES') {
         node('nami_debian_agent') {
-            stage('Initialize') {
-                checkout scm
-            }
-            stage('Build') {
-                withGcloudDockerCredentials {
-                    withBazel {
-                        sh 'bazel build //...'
+            env.JOB_WORKSPACE = "${env.HOME}/workspace/${env.JOB_NAME}/${env.BUILD_ID}"
+            ws(env.JOB_WORKSPACE) {
+                ansiColor {
+                    def binariesOutput = "${pwd()}/bitnami-tui-binaries"
+                    dir('bitnami-tui') {
+                        stage('Initialize') {
+                            checkout scm
+                            sh "mkdir -p '${binariesOutput}'"
+                        }
+                        stage('Build') {
+                            withGcloudDockerCredentials {
+                                withBazel([
+                                    dockerExtraOpts: "-v '${binariesOutput}:/bitnami-tui-binaries:rw'",
+                                ]) {
+                                    sh """
+                                        bazel build //...
+                                        ls -1d bazel-bin/bitnami-tui-* | grep -v runfiles | xargs -I % cp -pfv % /bitnami-tui-binaries
+                                    """
+                                }
+                            }
+                        }
+                        stage('Test') {
+                            // withGcloudDockerCredentials {
+                            //     withBazel {
+                            //         sh 'bazel test //...'
+                            //     }
+                            // }
+                        }
                     }
-                }
-            }
-            stage('Test') {
-                // withGcloudDockerCredentials {
-                //     withBazel {
-                //         sh 'bazel test //...'
-                //     }
-                // }
-            }
-            stage('Release') {
-                def binaries = [
-                    windows: 'bitnami-tui-windows-x64.exe',
-                    linux: 'bitnami-tui-linux-x64.run',
-                    osx: 'bitnami-tui-osx-x64',
-                ]
-                dir('bazel-bin') {
-                    if (params.RELEASE) {
-                        echo "We are not actually releasing"
-                        // do things
-                    }
-                    for (os in binaries) {
-                        archiveArtifacts artifacts: os.value
+                    dir(binariesOutput) {
+                        stage('Release') {
+                            def timestamp = getTimestamp()
+                            def binaries = [
+                                windows: "bitnami-tui-windows-x64.exe",
+                                linux: "bitnami-tui-linux-x64.run",
+                                osx: "bitnami-tui-osx-x64",
+                            ]
+
+                            sh """
+                                echo '${timestamp}' >latest
+                                mkdir '${timestamp}'
+                            """
+                            // Only copy the target files
+                            for (platform in binaries.keySet()) {
+                                sh "mv '${binaries[platform]}' '${timestamp}/'"
+                            }
+                            archiveArtifacts artifacts: "${timestamp}/*", fingerprint: true
+
+                            if (params.RELEASE) {
+                                // TODO(jota)
+                                // sh """
+                                //     s3cmd put latest s3://some-bucket/bitnami-tui/
+                                //     s3cmd put --recursive '${timestamp}' s3://some-bucket/bitnami-tui/
+                                // """
+                            }
+                        }
                     }
                 }
             }
