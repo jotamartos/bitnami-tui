@@ -42,7 +42,7 @@ try {
                         // do things
                     }
                     for (os in binaries) {
-                        archiveArtifacts artifacts: os.value,
+                        archiveArtifacts artifacts: os.value
                     }
                 }
             }
