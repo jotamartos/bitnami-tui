@@ -1,8 +1,7 @@
-bitnami-ui
 tmp
 bazel-bin
-bazel-bitnami-tui
 bazel-genfiles
 bazel-out
 bazel-testlogs
+bazel-tui
 .vscode

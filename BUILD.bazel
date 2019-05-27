@@ -1,0 +1,28 @@
+# gazelle:prefix github.com/jotamartos/bitnami-tui
+# gazelle:proto disable_global
+
+load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
+load("@bazel_gazelle//:def.bzl", "gazelle")
+
+gazelle(
+    name = "gazelle",
+    external = "vendored",
+)
+
+go_library(
+    name = "go_default_library",
+    srcs = ["app.go"],
+    importpath = "github.com/jotamartos/bitnami-tui",
+    visibility = ["//visibility:private"],
+    deps = [
+        "//vendor/github.com/go-ini/ini:go_default_library",
+        "//vendor/github.com/jotamartos/tui:go_default_library",
+    ],
+)
+
+go_binary(
+    name = "bitnami-tui",
+    embed = [":go_default_library"],
+    pure = "on",
+    visibility = ["//visibility:public"],
+)
