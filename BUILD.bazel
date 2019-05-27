@@ -21,8 +21,31 @@ go_library(
 )
 
 go_binary(
-    name = "bitnami-tui",
+    name = "bitnami-tui-windows",
     embed = [":go_default_library"],
+    goarch = "amd64",
+    goos = "windows",
+    out = "bitnami-tui-windows-x64.exe",
+    pure = "on",
+    visibility = ["//visibility:public"],
+)
+
+go_binary(
+    name = "bitnami-tui-osx",
+    embed = [":go_default_library"],
+    goarch = "amd64",
+    goos = "darwin",
+    out = "bitnami-tui-osx-x64",
+    pure = "on",
+    visibility = ["//visibility:public"],
+)
+
+go_binary(
+    name = "bitnami-tui-linux",
+    embed = [":go_default_library"],
+    goarch = "amd64",
+    goos = "linux",
+    out = "bitnami-tui-linux-x64.run",
     pure = "on",
     visibility = ["//visibility:public"],
 )
