@@ -23,18 +23,17 @@ try {
                 }
             }
             stage('Test') {
-                withGcloudDockerCredentials {
-                    withBazel {
-                        sh 'bazel test //...'
-                    }
-                }
+                // withGcloudDockerCredentials {
+                //     withBazel {
+                //         sh 'bazel test //...'
+                //     }
+                // }
             }
             stage('Release') {
                 def binaries = [
                     windows: 'bitnami-tui-windows-x64.exe',
                     linux: 'bitnami-tui-linux-x64.run',
                     osx: 'bitnami-tui-osx-x64',
-
                 ]
                 dir('bazel-bin') {
                     if (params.RELEASE) {
