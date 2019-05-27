@@ -1,31 +1,54 @@
 #!groovy
+@Library(['jenkins-pipeline-kubernetes', 'jenkins-pipeline-internal-kubernetes']) _
 
 properties([
-  parameters([
-      booleanParam(name: 'RELEASE', description: 'Upload the new binaries to s3', defaultValue: false),
-  ])
+    parameters([
+        booleanParam(name: 'RELEASE', description: 'Upload the new binaries to s3', defaultValue: false),
+    ]),
+    buildDiscarder(logRotator(numToKeepStr: '5', artifactNumToKeepStr: '15')),
+    disableConcurrentBuilds(),
 ])
 
-node('jenkins-agent-docker') {
-  try {
-    def image = "btui-${env.BUILD_ID}"
-    checkout scm
-    timestamps { ansiColor {
-      dir ('btui') {
-        stage('Build btui tool') {
-          {
-            sh """
-              docker run -i --rm \
-                -e RELEASE=$RELEASE \
-                --name build-btui-container ${image}
-            """
-          }
+try {
+    timeout(time: 30, unit: 'MINUTES') {
+        node('nami_debian_agent') {
+            stage('Initialize') {
+                checkout scm
+            }
+            stage('Build') {
+                withGcloudDockerCredentials {
+                    withBazel {
+                        sh 'bazel build //...'
+                    }
+                }
+            }
+            stage('Test') {
+                withGcloudDockerCredentials {
+                    withBazel {
+                        sh 'bazel test //...'
+                    }
+                }
+            }
+            stage('Release') {
+                def binaries = [
+                    windows: 'bitnami-tui-windows-x64.exe',
+                    linux: 'bitnami-tui-linux-x64.run',
+                    osx: 'bitnami-tui-osx-x64',
+
+                ]
+                dir('bazel-bin') {
+                    if (params.RELEASE) {
+                        echo "We are not actually releasing"
+                        // do things
+                    }
+                    for (os in binaries) {
+                        archiveArtifacts artifacts: os.value,
+                    }
+                }
+            }
         }
-      }
-    }}
-  }
-  catch(e) {
-      slackSend channel: "#assets", color: 'warning', message: "Failed  ${env.JOB_NAME}/#${env.BUILD_NUMBER} with ${e.message}.\n More info at: (<${env.BUILD_URL}|Open>)"
-      throw e
-  }
+    }
+} catch (e) {
+    // slackSend() ... etc
+    throw e
 }
