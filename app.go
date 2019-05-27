@@ -1,17 +1,21 @@
 package main
 
 import (
-	"fmt"
-	"github.com/go-ini/ini"
-	"github.com/vtuson/tui"
+  "fmt"
+  "os"
+  "encoding/json"
+  "github.com/go-ini/ini"
+  "github.com/jotamartos/tui"
 )
 
+var PROP_FILE   = "/opt/bitnami/properties.ini"
+var TUI_FILE   = "/opt/bitnami/btui.json"
+
 const (
-	PROP_FILE       = "/opt/bitnami/properties.ini"
-	GENERAL         = "General"
-	BASE_STACK      = "base_stack_key"
-	BASE_STACK_NAME = "base_stack_name"
-	SUPPORT         = "https://community.bitnami.com/"
+  GENERAL         = "General"
+  BASE_STACK_KEY  = "base_stack_key"
+  BASE_STACK_NAME = "base_stack_name"
+  SUPPORT         = "https://community.bitnami.com/"
 )
 
 type Stack struct {
@@ -20,9 +24,9 @@ type Stack struct {
 }
 
 func LoadStack(file string) *Stack {
-	cfg, err := ini.Load(PROP_FILE)
+	cfg, err := ini.Load(file)
 	if err != nil {
-		fmt.Println("could not find properties file", PROP_FILE)
+		fmt.Println("could not find properties file", file)
 		return nil
 	}
 	sec1, err := cfg.GetSection(GENERAL)
@@ -30,7 +34,7 @@ func LoadStack(file string) *Stack {
 		fmt.Println("error parsing ini file", err)
 		return nil
 	}
-	keyStack, err := sec1.GetKey(BASE_STACK)
+	keyStack, err := sec1.GetKey(BASE_STACK_KEY)
 	if err != nil {
 		fmt.Println("error parsing base stack", err)
 		return nil
@@ -48,85 +52,44 @@ func LoadStack(file string) *Stack {
 
 }
 
-func NewTestMenu(stack *Stack) *tui.Menu {
+func printMainMenu(stack *Stack, file string) *tui.Menu {
 	m := tui.NewMenu(tui.DefaultStyle())
 	m.Title = fmt.Sprintf("%s Frequently Run Commands", stack.Name)
 	m.Description = `Welcome to Bitnami's frequently run commands, please select from the list below what activities you would like to perform`
 
-	tmpcs := []tui.Command{
-		tui.Command{
-			Title:       "Remove the Bitnami Banner",
-			Cli:         fmt.Sprintf("/opt/bitnami/apps/%s/bnconfig --disable_banner 1", stack.Key),
-			Description: "Removing the bitnami banner",
-			Success:     "The banner has been removed, if it is still there please go to " + SUPPORT,
-			Fail:        "Something when wrong while removing the banner, Please run bnsupport and open a ticket at:" + SUPPORT,
-		},
-		tui.Command{
-			Title:       "Check you service status",
-			Cli:         "/opt/bitnami/ctlscript.sh status",
-			Description: "Checking service status",
-			Success:     "This is your status:",
-			Fail:        "Something when wrong while removing the banner, Please run bnsupport and open a ticket at:" + SUPPORT,
-			PrintOut:    true,
-		},
-		tui.Command{
-			Title:       "Set up Let's Encrypt",
-			Cli:         "/opt/bitnami/letsencrypt/scripts/generate-certificate.sh",
-			Description: "Connect your domain with lets encrypt",
-			Args: []tui.Argument{
-				tui.Argument{
-					Description: "Please enter an email associated with your domain",
-					Title:       "Your email",
-					Name:        "m",
-					IsFlag:      true,
-				},
-				tui.Argument{
-					Description: "Please enter your domain name (mydomain.com)",
-					Title:       "Your domain",
-					Name:        "d",
-					IsFlag:      true,
-				},
-			},
-			Success: "SSL via Let's Encrypt is now setup in your application",
-			Fail:    "Oh, it didnt work. Please run bnsupport from this tool and contact " + SUPPORT,
-		},
-		tui.Command{
-			Title:       "Set up your Domain for " + stack.Name,
-			Cli:         fmt.Sprintf("/opt/bitnami/apps/%s/bnconfig", stack.Key),
-			Description: "Connect your domain with " + stack.Name,
-			Args: []tui.Argument{
-				tui.Argument{
-					Description: "Please enter your domain name (mydomain.com)",
-					Title:       "Your domain",
-					Name:        "-machine_hostname",
-					IsFlag:      true,
-				},
-			},
-			Success: "You domain has been set up",
-			Fail:    "Oh, it didnt work. Please run bnsupport from this tool and contact " + SUPPORT,
-		},
-		tui.Command{
-			Title:       "Run our support tool (bnsupport)",
-			Cli:         "/opt/bitnami/bnsupport-linux-x64.run",
-			Description: "Collecting data and uploading results",
-			Success:     "Please attached the following ID to your support ticket at " + SUPPORT,
-			Fail:        "Something when wrong while removing the banner, Please go to:" + SUPPORT,
-			PrintOut:    true,
-		},
+  // Open commands.json file to create the menu
+  jsonFile, err := os.Open(file)
+	if err != nil {
+		fmt.Println("could not find commands.json file", file)
+		return nil
 	}
-	m.Commands = tmpcs
+  // Close json file and parse it after that
+  defer jsonFile.Close()
+  decoder := json.NewDecoder(jsonFile)
+  tmpcs := []tui.Option{}
+  jotaerr := decoder.Decode(&tmpcs)
+  if jotaerr != nil {
+    fmt.Println("error:", jotaerr)
+  }
+	m.Options = tmpcs
 	return m
 }
 
 func main() {
+  if _, err := os.Stat(PROP_FILE); os.IsNotExist(err) {
+    PROP_FILE     = "./properties.ini"
+  }
+  if _, err := os.Stat(TUI_FILE); os.IsNotExist(err) {
+    TUI_FILE     = "./btui.json"
+  }
 	stack := LoadStack(PROP_FILE)
 	if stack == nil {
 		return
 	}
 
-	menu := NewTestMenu(stack)
+	menu := printMainMenu(stack, TUI_FILE)
 
-	menu.Show()
+	menu.PrintMenu()
 	go menu.EventManager()
 	<-menu.Wait
 	menu.Quit()

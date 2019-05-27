@@ -1,0 +1,31 @@
+#!groovy
+
+properties([
+  parameters([
+      booleanParam(name: 'RELEASE', description: 'Upload the new binaries to s3', defaultValue: false),
+  ])
+])
+
+node('jenkins-agent-docker') {
+  try {
+    def image = "btui-${env.BUILD_ID}"
+    checkout scm
+    timestamps { ansiColor {
+      dir ('btui') {
+        stage('Build btui tool') {
+          {
+            sh """
+              docker run -i --rm \
+                -e RELEASE=$RELEASE \
+                --name build-btui-container ${image}
+            """
+          }
+        }
+      }
+    }}
+  }
+  catch(e) {
+      slackSend channel: "#assets", color: 'warning', message: "Failed  ${env.JOB_NAME}/#${env.BUILD_NUMBER} with ${e.message}.\n More info at: (<${env.BUILD_URL}|Open>)"
+      throw e
+  }
+}
