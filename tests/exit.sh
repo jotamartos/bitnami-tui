@@ -1,6 +1,5 @@
 #!/usr/bin/env expect
 
-cd tests
 spawn go run ../app.go
 
 expect {

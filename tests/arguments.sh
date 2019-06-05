@@ -2,7 +2,6 @@
 
 set timeout 10
 
-cd tests
 spawn go run ../app.go
 
 expect {
