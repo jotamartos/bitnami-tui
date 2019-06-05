@@ -12,24 +12,18 @@ properties([
     disableConcurrentBuilds(),
 ])
 
-@NonCPS
-def getTimestamp() {
-    ZoneId zone = ZoneId.systemDefault()
-    DateTimeFormatter df = DateTimeFormatter.ofPattern("yyyyMMddHHmmss").withZone(zone)
-    Instant instant = Instant.now()
-    return df.format(instant)
-}
-
 try {
     timeout(time: 30, unit: 'MINUTES') {
         node('nami_debian_agent') {
             env.JOB_WORKSPACE = "${env.HOME}/workspace/${env.JOB_NAME}/${env.BUILD_ID}"
             ws(env.JOB_WORKSPACE) {
                 ansiColor {
+                    def version = ""
                     def binariesOutput = "${pwd()}/bitnami-tui-binaries"
                     dir('bitnami-tui') {
                         stage('Initialize') {
                             checkout scm
+                            version = readFile(file: 'VERSION').trim()
                             sh "mkdir -p '${binariesOutput}'"
                         }
                         stage('Build') {
@@ -54,7 +48,6 @@ try {
                     }
                     dir(binariesOutput) {
                         stage('Release') {
-                            def timestamp = getTimestamp()
                             def binaries = [
                                 windows: "bitnami-tui-windows-x64.exe",
                                 linux: "bitnami-tui-linux-x64.run",
@@ -62,20 +55,20 @@ try {
                             ]
 
                             sh """
-                                echo '${timestamp}' >latest
-                                mkdir '${timestamp}'
+                                echo '${version}' >latest
+                                mkdir '${version}'
                             """
                             // Only copy the target files
                             for (platform in binaries.keySet()) {
-                                sh "mv '${binaries[platform]}' '${timestamp}/'"
+                                sh "mv '${binaries[platform]}' '${version}/'"
                             }
-                            archiveArtifacts artifacts: "${timestamp}/*", fingerprint: true
+                            archiveArtifacts artifacts: "${version}/*", fingerprint: true
 
                             if (params.RELEASE) {
                                 // TODO(jota)
                                 // sh """
                                 //     s3cmd put latest s3://some-bucket/bitnami-tui/
-                                //     s3cmd put --recursive '${timestamp}' s3://some-bucket/bitnami-tui/
+                                //     s3cmd put --recursive '${version}' s3://some-bucket/bitnami-tui/
                                 // """
                             }
                         }
