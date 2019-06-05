@@ -1,23 +1,33 @@
 package main
 
 import (
-  "fmt"
-  "os"
-  "encoding/json"
-  "github.com/go-ini/ini"
-  "github.com/jotamartos/tui"
+	"encoding/json"
+	"fmt"
+	"os"
+
+	"github.com/go-ini/ini"
+	"github.com/jotamartos/tui"
 )
 
-var PROP_FILE   = "/opt/bitnami/properties.ini"
-var TUI_FILE   = "/opt/bitnami/btui.json"
+var (
+	// Version of the tool
+	version  = ""
+	propFile = "/opt/bitnami/properties.ini"
+	tuiFile  = "/opt/bitnami/btui.json"
+)
 
 const (
-  GENERAL         = "General"
-  BASE_STACK_KEY  = "base_stack_key"
-  BASE_STACK_NAME = "base_stack_name"
-  SUPPORT         = "https://community.bitnami.com/"
+	// general states the section in the properties.ini file
+	general = "General"
+	// baseStackKey states the key related to the stack key in the properties.ini file
+	baseStackKey = "base_stack_key"
+	// baseStackName states the key related to the stack name in the properties.ini file
+	baseStackName = "base_stack_name"
+	// supportLink
+	supportLink = "https://community.bitnami.com/"
 )
 
+// Stack represents an bitnami stack
 type Stack struct {
 	Name string
 	Key  string
@@ -29,17 +39,17 @@ func LoadStack(file string) *Stack {
 		fmt.Println("could not find properties file", file)
 		return nil
 	}
-	sec1, err := cfg.GetSection(GENERAL)
+	sec1, err := cfg.GetSection(general)
 	if err != nil {
 		fmt.Println("error parsing ini file", err)
 		return nil
 	}
-	keyStack, err := sec1.GetKey(BASE_STACK_KEY)
+	keyStack, err := sec1.GetKey(baseStackKey)
 	if err != nil {
 		fmt.Println("error parsing base stack", err)
 		return nil
 	}
-	nameStack, err := sec1.GetKey(BASE_STACK_NAME)
+	nameStack, err := sec1.GetKey(baseStackName)
 	if err != nil {
 		fmt.Println("error parsing base stack name", err)
 		return nil
@@ -55,39 +65,39 @@ func LoadStack(file string) *Stack {
 func printMainMenu(stack *Stack, file string) *tui.Menu {
 	m := tui.NewMenu(tui.DefaultStyle())
 	m.Title = fmt.Sprintf("%s Frequently Run Commands", stack.Name)
-	m.Description = `Welcome to Bitnami's frequently run commands, please select from the list below what activities you would like to perform`
+	m.Description = fmt.Sprintf(`Welcome to Bitnami's frequently run commands tool (%s), please select from the list below what activities you would like to perform`, version)
 
-  // Open commands.json file to create the menu
-  jsonFile, err := os.Open(file)
+	// Open commands.json file to create the menu
+	jsonFile, err := os.Open(file)
 	if err != nil {
 		fmt.Println("could not find commands.json file", file)
 		return nil
 	}
-  // Close json file and parse it after that
-  defer jsonFile.Close()
-  decoder := json.NewDecoder(jsonFile)
-  tmpcs := []tui.Option{}
-  jotaerr := decoder.Decode(&tmpcs)
-  if jotaerr != nil {
-    fmt.Println("error:", jotaerr)
-  }
+	// Close json file and parse it after that
+	defer jsonFile.Close()
+	decoder := json.NewDecoder(jsonFile)
+	tmpcs := []tui.Option{}
+	jotaerr := decoder.Decode(&tmpcs)
+	if jotaerr != nil {
+		fmt.Println("error:", jotaerr)
+	}
 	m.Options = tmpcs
 	return m
 }
 
 func main() {
-  if _, err := os.Stat(PROP_FILE); os.IsNotExist(err) {
-    PROP_FILE     = "./properties.ini"
-  }
-  if _, err := os.Stat(TUI_FILE); os.IsNotExist(err) {
-    TUI_FILE     = "./btui.json"
-  }
-	stack := LoadStack(PROP_FILE)
+	if _, err := os.Stat(propFile); os.IsNotExist(err) {
+		propFile = "./properties.ini"
+	}
+	if _, err := os.Stat(tuiFile); os.IsNotExist(err) {
+		tuiFile = "./btui.json"
+	}
+	stack := LoadStack(propFile)
 	if stack == nil {
 		return
 	}
 
-	menu := printMainMenu(stack, TUI_FILE)
+	menu := printMainMenu(stack, tuiFile)
 
 	menu.PrintMenu()
 	go menu.EventManager()

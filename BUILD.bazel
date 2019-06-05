@@ -28,6 +28,7 @@ go_binary(
     out = "bitnami-tui-windows-x64.exe",
     pure = "on",
     visibility = ["//visibility:public"],
+    x_defs = {"main.version": "{STABLE_VERSION}"},
 )
 
 go_binary(
@@ -38,6 +39,7 @@ go_binary(
     out = "bitnami-tui-osx-x64",
     pure = "on",
     visibility = ["//visibility:public"],
+    x_defs = {"main.version": "{STABLE_VERSION}"},
 )
 
 go_binary(
@@ -48,4 +50,5 @@ go_binary(
     out = "bitnami-tui-linux-x64.run",
     pure = "on",
     visibility = ["//visibility:public"],
+    x_defs = {"main.version": "{STABLE_VERSION}"},
 )
