@@ -21,7 +21,7 @@ expect {
 }
 
 send -- "\r"
-expect -exact "\[?25l\[?25l"
+expect -exact "\[42;159H\[42;159H"
 
 send -- "a\r"
 expect {
@@ -30,10 +30,10 @@ expect {
 }
 
 send -- "\r"
-expect -exact "\[?25l\[?25l"
+expect -exact "\[42;159H\[42;159H"
 
 send -- "b\r"
-expect -exact "\[?25l\[?25l"
+expect -exact "\[42;159H\[42;159H"
 
 send -- ""
 expect {
