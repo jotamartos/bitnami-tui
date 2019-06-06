@@ -1,6 +1,10 @@
 #!/usr/bin/env expect
 
-spawn go run ../app.go
+if { [llength $argv] == 0 } {
+    spawn go run ../app.go
+} else {
+    spawn [lindex $argv 0]
+}
 
 expect {
     timeout { puts "timed out when opening the application"; exit 1 }

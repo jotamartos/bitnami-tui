@@ -1,9 +1,5 @@
 #!groovy
 
-import java.time.ZoneId
-import java.time.Instant
-import java.time.format.DateTimeFormatter
-
 properties([
     parameters([
         booleanParam(name: 'RELEASE', description: 'Upload the new binaries to s3', defaultValue: false),
@@ -20,6 +16,11 @@ try {
                 ansiColor {
                     def version = ""
                     def binariesOutput = "${pwd()}/bitnami-tui-binaries"
+                    def binaries = [
+                        windows: "bitnami-tui-windows-x64.exe",
+                        linux: "bitnami-tui-linux-x64.run",
+                        osx: "bitnami-tui-osx-x64",
+                    ]
                     dir('bitnami-tui') {
                         stage('Initialize') {
                             checkout scm
@@ -39,21 +40,20 @@ try {
                             }
                         }
                         stage('Test') {
-                            // withGcloudDockerCredentials {
-                            //     withBazel {
-                            //         sh 'bazel test //...'
-                            //     }
-                            // }
+                            def linuxBinary = "${binariesOutput}/${binaries.linux}"
+                            sh '''
+                                sudo apt-get update
+                                sudo apt-get install -y expect
+                            '''
+                            dir('tests') {
+                                sh """
+                                    ./test.sh '${linuxBinary}'
+                                """
+                            }
                         }
                     }
                     dir(binariesOutput) {
                         stage('Release') {
-                            def binaries = [
-                                windows: "bitnami-tui-windows-x64.exe",
-                                linux: "bitnami-tui-linux-x64.run",
-                                osx: "bitnami-tui-osx-x64",
-                            ]
-
                             sh """
                                 echo '${version}' >latest
                                 mkdir '${version}'
