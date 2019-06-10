@@ -7,9 +7,9 @@ export TERM=vt100
 EXIT=0
 printf "######## Initiating tests for the Bitnami TUI ########\n\n"
 
-for test in exit.sh simpleCommand.sh submenu.sh arguments.sh; do
+for test in exit.expect simpleCommand.expect submenu.expect arguments.expect; do
     printf "### Testing ${test}\n\n"
-    script --return -c "./$test $1"
+    ./$test $1
     EXIT_TMP=$?
     echo "Exit code: $EXIT_TMP"
     if [ $EXIT_TMP -ne 0 ]; then EXIT=1; fi
