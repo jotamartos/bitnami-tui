@@ -16,7 +16,7 @@ try {
                 ansiColor {
                     def version = ""
                     def binariesOutput = "${pwd()}/bitnami-tui-binaries"
-                    def binaries = [
+                    def originalBinaries = [
                         windows: "bitnami-tui-windows-x64.exe",
                         linux: "bitnami-tui-linux-x64.run",
                         osx: "bitnami-tui-osx-x64",
@@ -27,6 +27,11 @@ try {
                             version = readFile(file: 'VERSION').trim()
                             sh "mkdir -p '${binariesOutput}'"
                         }
+                        def binariesWithVersion = [
+                            windows: "bitnami-tui-${version}-windows-x64.exe",
+                            linux: "bitnami-tui-${version}-linux-x64.run",
+                            osx: "bitnami-tui-${version}-osx-x64",
+                        ]
                         stage('Build') {
                             withGcloudDockerCredentials {
                                 withBazel([
@@ -51,25 +56,28 @@ try {
                                 """
                             }
                         }
-                    }
-                    dir(binariesOutput) {
                         stage('Release') {
-                            sh """
-                                echo '${version}' >latest
-                                mkdir '${version}'
-                            """
-                            // Only copy the target files
-                            for (platform in binaries.keySet()) {
-                                sh "mv '${binaries[platform]}' '${version}/'"
-                            }
-                            archiveArtifacts artifacts: "${version}/*", fingerprint: true
+                            dir(binariesOutput) {
+                                // Only copy the target files
+                                sh """
+                                    mkdir '${version}'
+                                """
+                                for (platform in originalBinaries.keySet()) {
+                                    sh "mv '${originalBinaries[platform]}' '${version}/${binariesWithVersion[platform]}'"
+                                }
+                                archiveArtifacts artifacts: "${version}/*", fingerprint: true
 
-                            if (params.RELEASE) {
-                                // TODO(jota)
-                                // sh """
-                                //     s3cmd put latest s3://some-bucket/bitnami-tui/
-                                //     s3cmd put --recursive '${version}' s3://some-bucket/bitnami-tui/
-                                // """
+                                if (params.RELEASE) {
+                                    withCredentials([
+                                        usernamePassword(credentialsId: 'ami-credentials-iam', usernameVariable: 'ACCESS_KEY', passwordVariable: 'SECRET_KEY'),
+                                    ]) {
+                                        for (platform in binaries.keySet()) {
+                                          sh """
+                                              s3cmd put --access_key=ACCESS_KEY --secret_key=SECRET_KEY --recursive '${version}/*' s3://bitnami-autobuild-ondemand/installers/stable/
+                                          """
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
