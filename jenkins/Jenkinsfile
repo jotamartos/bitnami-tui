@@ -53,7 +53,7 @@ try {
                             dir('tests') {
                                 timeout(60) {
                                     sh """
-                                        tmux new-session -s btui_test -d -x 100 -y 100 './test.sh ${linuxBinary} |& tee /tmp/btui_tests_output'
+                                        tmux new-session -s btui_test -d -x 100 -y 100 "./test.sh '${linuxBinary}' |& tee /tmp/btui_tests_output"
                                         while [ ! -f /tmp/btui_exit_code ]; do sleep 5; done
                                         cat /tmp/btui_tests_output
                                         exit $(cat /tmp/btui_exit_code)
