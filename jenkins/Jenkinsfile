@@ -48,12 +48,17 @@ try {
                             def linuxBinary = "${binariesOutput}/${originalBinaries.linux}"
                             sh '''
                                 sudo apt-get update
-                                sudo apt-get install -y expect
+                                sudo apt-get install -y expect tmux
                             '''
                             dir('tests') {
-                                sh """
-                                    ./test.sh '${linuxBinary}'
-                                """
+                                timeout(60) {
+                                    sh """
+                                        tmux new-session -s btui_test -d -x 100 -y 100 './test.sh ${linuxBinary} |& tee /tmp/btui_tests_output'
+                                        while [ ! -f /tmp/btui_exit_code ]; do sleep 5; done
+                                        cat /tmp/btui_tests_output
+                                        exit $(cat /tmp/btui_exit_code)
+                                    """
+                                }
                             }
                         }
                         stage('Release') {

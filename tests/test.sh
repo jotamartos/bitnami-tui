@@ -15,4 +15,5 @@ for test in exit.expect simpleCommand.expect submenu.expect arguments.expect; do
     if [ $EXIT_TMP -ne 0 ]; then EXIT=1; fi
 done
 
+echo $EXIT > /tmp/btui_exit_code
 exit $EXIT
