@@ -76,11 +76,9 @@ try {
                                     withCredentials([
                                         usernamePassword(credentialsId: 'ami-credentials-iam', usernameVariable: 'ACCESS_KEY', passwordVariable: 'SECRET_KEY'),
                                     ]) {
-                                        for (platform in binaries.keySet()) {
-                                          sh """
-                                              s3cmd put --access_key=ACCESS_KEY --secret_key=SECRET_KEY --recursive '${version}/*' s3://bitnami-autobuild-ondemand/installers/stable/
-                                          """
-                                        }
+                                        sh """
+                                            s3cmd put --access_key=ACCESS_KEY --secret_key=SECRET_KEY --recursive '${version}/*' s3://bitnami-autobuild-ondemand/installers/stable/
+                                        """
                                     }
                                 }
                             }
