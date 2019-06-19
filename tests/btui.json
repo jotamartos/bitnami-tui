@@ -3,7 +3,7 @@
     "Title":       "Remove the Bitnami Banner",
     "Cli":         "./return.sh --disable_banner 1",
     "Description": "Removing the bitnami banner",
-    "Success":     "The banner has been removed, if it is still there please go to https://community.bitnami.com",
+    "Success":     "Success! The banner has been removed properly, if it is still there please go to https://community.bitnami.com",
     "Fail":        "Something when wrong while removing the banner, Please run bnsupport and open a ticket at: https://community.bitnami.com"
   },
   {

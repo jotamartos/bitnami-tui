@@ -24,7 +24,7 @@ expect {
 send -- "\r"
 expect {
     timeout { puts "timed out when getting the status of the services"; exit 1 }
-    "This is"
+    "status"
 }
 
 send -- ""
