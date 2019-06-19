@@ -220,7 +220,7 @@ func (m *Menu) ShowResult(o *Option) {
 		m.printPageHeader(o.BreadCrum(*m), o.Fail+" Error ocurred:"+o.Error.Error())
 	} else {
 		m.p.Clear()
-		m.printPageHeader(o.BreadCrum(*m), "Success! "+o.Success)
+		m.printPageHeader(o.BreadCrum(*m), o.Success)
 	}
 
 	if o.PrintOut {

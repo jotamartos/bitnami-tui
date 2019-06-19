@@ -13,7 +13,7 @@ var (
 	// Version of the tool
 	version  = ""
 	propFile = "/opt/bitnami/properties.ini"
-	tuiFile  = "/opt/bitnami/btui.json"
+	tuiFile  = "/opt/bitnami/btui/btui.json"
 )
 
 const (
