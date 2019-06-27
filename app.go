@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-
 	"github.com/go-ini/ini"
 	"github.com/jotamartos/tui"
 )
@@ -13,7 +12,7 @@ var (
 	// Version of the tool
 	version  = ""
 	propFile = "/opt/bitnami/properties.ini"
-	tuiFile  = "/opt/bitnami/btui/btui.json"
+	tuiFile  = "/opt/bitnami/bnhelper/bnhelper.json"
 )
 
 const (
@@ -65,7 +64,7 @@ func LoadStack(file string) *Stack {
 func printMainMenu(stack *Stack, file string) *tui.Menu {
 	m := tui.NewMenu(tui.DefaultStyle())
 	m.Title = fmt.Sprintf("%s Frequently Run Commands", stack.Name)
-	m.Description = fmt.Sprintf(`Welcome to Bitnami's frequently run commands tool (%s), please select from the list below what activities you would like to perform`, version)
+	m.Description = fmt.Sprintf("  ___ _ _                   _\n | _ |_) |_ _ _  __ _ _ __ (_)\n | _ \\ |  _| ' \\/ _` | '  \\| |\n |___/_|\\__|_|_|\\__,_|_|_|_|_|\n\nWelcome to Bitnami Helper Tool (%s), please select from the list below what activities you would like to perform", version)
 
 	// Open commands.json file to create the menu
 	jsonFile, err := os.Open(file)
@@ -90,7 +89,7 @@ func main() {
 		propFile = "./properties.ini"
 	}
 	if _, err := os.Stat(tuiFile); os.IsNotExist(err) {
-		tuiFile = "./btui.json"
+		tuiFile = "./bnhelper/bnhelper.json"
 	}
 	stack := LoadStack(propFile)
 	if stack == nil {

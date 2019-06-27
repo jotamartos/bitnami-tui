@@ -1,4 +1,4 @@
-module github.com/jotamartos/bitnami-tui
+module github.com/jotamartos/bnhelper
 
 go 1.12
 

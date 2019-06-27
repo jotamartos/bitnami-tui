@@ -44,6 +44,34 @@
       "Fail":        "Something when wrong while starting the services, Please run bnsupport and open a ticket at: https://community.bitnami.com",
       "PrintOut":    true
     },{
+      "Title":       "Start the services",
+      "Description": "Starting the Bitnami services",
+      "Cli":         "./return.sh start",
+      "Success":     "Information after starting the services:",
+      "Fail":        "Something when wrong while starting the services, Please run bnsupport and open a ticket at: https://community.bitnami.com",
+      "PrintOut":    true
+    },{
+      "Title":       "Start the services",
+      "Description": "Starting the Bitnami services",
+      "Cli":         "./return.sh start",
+      "Success":     "Information after starting the services:",
+      "Fail":        "Something when wrong while starting the services, Please run bnsupport and open a ticket at: https://community.bitnami.com",
+      "PrintOut":    true
+    },{
+      "Title":       "Start the services",
+      "Description": "Starting the Bitnami services",
+      "Cli":         "./return.sh start",
+      "Success":     "Information after starting the services:",
+      "Fail":        "Something when wrong while starting the services, Please run bnsupport and open a ticket at: https://community.bitnami.com",
+      "PrintOut":    true
+    },{
+      "Title":       "Start the services",
+      "Description": "Starting the Bitnami services",
+      "Cli":         "./return.sh start",
+      "Success":     "Information after starting the services:",
+      "Fail":        "Something when wrong while starting the services, Please run bnsupport and open a ticket at: https://community.bitnami.com",
+      "PrintOut":    true
+    },{
       "Title":       "Stop the services",
       "Description": "Stopping the Bitnami services",
       "Cli":         "./return.sh stop",
@@ -54,10 +82,12 @@
   },
   {
     "Title":       "Run the Bitnami Support tool (bnsupport)",
-    "Cli":         "./return.sh bnsupport",
-    "Description": "Collecting data and uploading results",
-    "Success":     "Please attached the following ID to your support ticket at https://community.bitnami.com",
-    "Fail":        "Something when wrong while removing the banner, Please go to: https://community.bitnami.com",
-    "PrintOut":    true
+    "Cli":         "/tmp/test.sh",
+    "Description": "Press Enter to continue",
+    "External":    true
+  },
+  {
+    "Title":       "Quit",
+    "Exit":    true
   }
 ]

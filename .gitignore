@@ -1,7 +1,7 @@
 bitnami-ui
 tmp
 bazel-bin
-bazel-bitnami-tui
+bazel-bnhelper
 bazel-genfiles
 bazel-out
 bazel-testlogs

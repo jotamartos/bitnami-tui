@@ -15,31 +15,31 @@ try {
             ws(env.JOB_WORKSPACE) {
                 ansiColor {
                     def version = ""
-                    def binariesOutput = "${pwd()}/bitnami-tui-binaries"
+                    def binariesOutput = "${pwd()}/bnhelper-binaries"
                     def originalBinaries = [
-                        windows: "bitnami-tui-windows-x64.exe",
-                        linux: "bitnami-tui-linux-x64.run",
-                        osx: "bitnami-tui-osx-x64",
+                        windows: "bnhelper-windows-x64.exe",
+                        linux: "bnhelper-linux-x64.run",
+                        osx: "bnhelper-osx-x64",
                     ]
-                    dir('bitnami-tui') {
+                    dir('bnhelper') {
                         stage('Initialize') {
                             checkout scm
                             version = readFile(file: 'VERSION').trim()
                             sh "mkdir -p '${binariesOutput}'"
                         }
                         def binariesWithVersion = [
-                            windows: "bitnami-tui-${version}-windows-x64.exe",
-                            linux: "bitnami-tui-${version}-linux-x64.run",
-                            osx: "bitnami-tui-${version}-osx-x64",
+                            windows: "bnhelper-${version}-windows-x64.exe",
+                            linux: "bnhelper-${version}-linux-x64.run",
+                            osx: "bnhelper-${version}-osx-x64",
                         ]
                         stage('Build') {
                             withGcloudDockerCredentials {
                                 withBazel([
-                                    dockerExtraOpts: "-v '${binariesOutput}:/bitnami-tui-binaries:rw'",
+                                    dockerExtraOpts: "-v '${binariesOutput}:/bnhelper-binaries:rw'",
                                 ]) {
                                     sh """
                                         bazel build //...
-                                        ls -1d bazel-bin/bitnami-tui-* | grep -v runfiles | xargs -I % cp -pfv % /bitnami-tui-binaries
+                                        ls -1d bazel-bin/bnhelper-* | grep -v runfiles | xargs -I % cp -pfv % /bnhelper-binaries
                                     """
                                 }
                             }
@@ -53,10 +53,10 @@ try {
                             dir('tests') {
                                 timeout(120) {
                                     sh """
-                                        tmux new-session -s btui_test -d -x 100 -y 100 "./test.sh '${linuxBinary}' |& tee /tmp/btui_tests_output"
-                                        while [ ! -f /tmp/btui_exit_code ]; do sleep 5; done
-                                        cat /tmp/btui_tests_output
-                                        exit \$(cat /tmp/btui_exit_code)
+                                        tmux new-session -s bnhelper_test -d -x 100 -y 100 "./test.sh '${linuxBinary}' |& tee /tmp/bnhelper_tests_output"
+                                        while [ ! -f /tmp/bnhelper_exit_code ]; do sleep 5; done
+                                        cat /tmp/bnhelper_tests_output
+                                        exit \$(cat /tmp/bnhelper_exit_code)
                                     """
                                 }
                             }
@@ -73,12 +73,39 @@ try {
                                 archiveArtifacts artifacts: "${version}/*", fingerprint: true
 
                                 if (params.RELEASE) {
-                                    withCredentials([
-                                        usernamePassword(credentialsId: 'ami-credentials-iam', usernameVariable: 'ACCESS_KEY', passwordVariable: 'SECRET_KEY'),
-                                    ]) {
-                                        sh """
-                                            s3cmd put --access_key=ACCESS_KEY --secret_key=SECRET_KEY --recursive '${version}/*' s3://bitnami-autobuild-ondemand/installers/stable/
-                                        """
+                                    String s3cfgCurrentFile = "${env.HOME}/.s3cfg"
+                                    Boolean backup = false
+                                    if (fileExists(s3cfgCurrentFile)) {
+                                        sh "mv ${s3cfgCurrentFile} ${s3cfgCurrentFile}.bak"
+                                        backup = false
+                                    }
+                                    try {
+                                        withCredentials([
+                                            usernamePassword(credentialsId: 'ami-credentials-iam', usernameVariable: 'ACCESS_KEY', passwordVariable: 'SECRET_KEY'),
+                                        ]) {
+                                            String s3cfgFile = "${env.HOME}/.s3cfg-ami-credentials"
+                                            sh """
+                                                cat <<EOF >'${s3cfgFile}'
+[default]
+access_key = ${ACCESS_KEY}
+secret_key = ${SECRET_KEY}
+EOF
+                                            """
+                                            sh "ln -sf '${s3cfgFile}' '${s3cfgCurrentFile}'"
+                                            try {
+                                                block()
+                                                sh """
+                                                    s3cmd put --recursive '${version}/*' s3://bitnami-autobuild-ondemand/installers/stable/
+                                                """
+                                            } finally {
+                                                sh "unlink '${s3cfgCurrentFile}'"
+                                            }
+                                        }
+                                    } finally {
+                                        sh "rm '${s3cfgFile}'"
+                                        if (backup) {
+                                            sh "mv '${s3cfgCurrentFile}.bak' '${s3cfgCurrentFile}'"
+                                        }
                                     }
                                 }
                             }

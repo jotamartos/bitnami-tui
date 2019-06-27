@@ -1,4 +1,4 @@
-# gazelle:prefix github.com/jotamartos/bitnami-tui
+# gazelle:prefix github.com/jotamartos/bnhelper
 # gazelle:proto disable_global
 
 load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
@@ -12,7 +12,7 @@ gazelle(
 go_library(
     name = "go_default_library",
     srcs = ["app.go"],
-    importpath = "github.com/jotamartos/bitnami-tui",
+    importpath = "github.com/jotamartos/bnhelper",
     visibility = ["//visibility:private"],
     deps = [
         "//vendor/github.com/go-ini/ini:go_default_library",
@@ -21,33 +21,33 @@ go_library(
 )
 
 go_binary(
-    name = "bitnami-tui-windows",
+    name = "bnhelper-windows",
     embed = [":go_default_library"],
     goarch = "amd64",
     goos = "windows",
-    out = "bitnami-tui-windows-x64.exe",
+    out = "bnhelper-windows-x64.exe",
     pure = "on",
     visibility = ["//visibility:public"],
     x_defs = {"main.version": "{STABLE_VERSION}"},
 )
 
 go_binary(
-    name = "bitnami-tui-osx",
+    name = "bnhelper-osx",
     embed = [":go_default_library"],
     goarch = "amd64",
     goos = "darwin",
-    out = "bitnami-tui-osx-x64",
+    out = "bnhelper-osx-x64",
     pure = "on",
     visibility = ["//visibility:public"],
     x_defs = {"main.version": "{STABLE_VERSION}"},
 )
 
 go_binary(
-    name = "bitnami-tui-linux",
+    name = "bnhelper-linux",
     embed = [":go_default_library"],
     goarch = "amd64",
     goos = "linux",
-    out = "bitnami-tui-linux-x64.run",
+    out = "bnhelper-linux-x64.run",
     pure = "on",
     visibility = ["//visibility:public"],
     x_defs = {"main.version": "{STABLE_VERSION}"},
