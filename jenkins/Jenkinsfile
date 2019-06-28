@@ -74,6 +74,7 @@ try {
 
                                 if (params.RELEASE) {
                                     String s3cfgCurrentFile = "${env.HOME}/.s3cfg"
+                                    String s3cfgFile = "${env.HOME}/.s3cfg-ami-credentials"
                                     Boolean backup = false
                                     if (fileExists(s3cfgCurrentFile)) {
                                         sh "mv ${s3cfgCurrentFile} ${s3cfgCurrentFile}.bak"
@@ -83,7 +84,6 @@ try {
                                         withCredentials([
                                             usernamePassword(credentialsId: 'ami-credentials-iam', usernameVariable: 'ACCESS_KEY', passwordVariable: 'SECRET_KEY'),
                                         ]) {
-                                            String s3cfgFile = "${env.HOME}/.s3cfg-ami-credentials"
                                             sh """
                                                 cat <<EOF >'${s3cfgFile}'
 [default]
@@ -93,9 +93,8 @@ EOF
                                             """
                                             sh "ln -sf '${s3cfgFile}' '${s3cfgCurrentFile}'"
                                             try {
-                                                block()
                                                 sh """
-                                                    s3cmd put --recursive '${version}/*' s3://bitnami-autobuild-ondemand/installers/stable/
+                                                    s3cmd put --recursive '${version}/' s3://bitnami-autobuild-ondemand/installers/stable/
                                                 """
                                             } finally {
                                                 sh "unlink '${s3cfgCurrentFile}'"
